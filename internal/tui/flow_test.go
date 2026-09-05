@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strings"
 	"sync"
 	"testing"
@@ -49,12 +50,16 @@ type fakeShell struct {
 	repos    map[string]map[string]string
 	commands []string
 	guard    sync.Mutex
+	// delay holds each command open, so a scan runs long enough for its
+	// line to show.
+	delay time.Duration
 }
 
 func (f *fakeShell) run(_ context.Context, command string, out io.Writer) error {
 	f.guard.Lock()
 	f.commands = append(f.commands, command)
 	f.guard.Unlock()
+	time.Sleep(f.delay)
 	if strings.HasPrefix(command, "gh repo clone ") {
 		dir := strings.Split(command, "'")[1]
 		name := filepath.ToSlash(filepath.Join(filepath.Base(filepath.Dir(dir)), filepath.Base(dir)))
@@ -249,6 +254,7 @@ func on(title string, keys ...tea.Msg) press {
 type scripted struct {
 	t       *testing.T
 	out     io.Writer
+	size    tea.WindowSizeMsg
 	presses []press
 	index   int
 	frames  []string
@@ -264,7 +270,12 @@ func (s *scripted) run(screen *screen) error {
 	if os.Getenv("TUI_DEBUG") != "" {
 		s.t.Logf("screen %d: waiting for %q", s.index, current.title)
 	}
-	model := teatest.NewTestModel(s.t, &recorder{screen: screen, frames: &s.frames}, teatest.WithInitialTermSize(100, 40))
+	model := teatest.NewTestModel(s.t, &recorder{screen: screen, frames: &s.frames}, teatest.WithInitialTermSize(s.size.Width, s.size.Height))
+	// teatest sends no size for a zero one; a pty nothing sized reports
+	// zero by zero, and bubbletea passes that on.
+	if s.size.Width == 0 {
+		model.Send(s.size)
+	}
 	teatest.WaitFor(s.t, model.Output(), func(shown []byte) bool {
 		return bytes.Contains(shown, []byte(current.title))
 	}, teatest.WithDuration(5*time.Second))
@@ -303,17 +314,40 @@ func (r *recorder) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (r *recorder) View() string { return r.screen.View() }
 
+// terminalOf is the terminal a test runs the flow on: its size, and how
+// long a wait runs before its line shows, an hour unless the test is
+// about the line.
+type terminalOf struct {
+	size  tea.WindowSizeMsg
+	after time.Duration
+}
+
+var wide = terminalOf{size: tea.WindowSizeMsg{Width: 100, Height: 40}, after: time.Hour}
+
 func guided(t *testing.T, opts setup.Options, presses ...press) (*scripted, error) {
 	t.Helper()
+	return wide.guided(t, opts, presses...)
+}
+
+// guided runs the flow the way Run does, the wait line wired in and the
+// screens scripted.
+func (term terminalOf) guided(t *testing.T, opts setup.Options, presses ...press) (*scripted, error) {
+	t.Helper()
+	out := opts.Stdout
+	waiting := newWait(out, term.after)
+	opts.Progress, opts.Stdout = waiting.report, waiting
 	session, err := setup.Start(opts)
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer session.Close()
-	script := &scripted{t: t, out: opts.Stdout, presses: presses}
-	err = run(context.Background(), session, opts, script.run)
+	script := &scripted{t: t, out: opts.Stdout, size: term.size, presses: presses}
+	err = run(context.Background(), session, opts, func(s *screen) error {
+		waiting.clear()
+		return script.run(s)
+	})
 	if script.index != len(presses) {
-		t.Fatalf("%d screens scripted, %d shown; output:\n%s", len(presses), script.index, opts.Stdout.(*bytes.Buffer).String())
+		t.Fatalf("%d screens scripted, %d shown; output:\n%s", len(presses), script.index, out.(*bytes.Buffer).String())
 	}
 	return script, err
 }
@@ -866,4 +900,97 @@ func TestSequenceWalksBackOverSkippedStepsIntoTheLastOfAList(t *testing.T) {
 	if result, _ = sequence(hidden, hidden)(forward); result != skipped {
 		t.Fatalf("a list with nothing shown = %v, want skipped", result)
 	}
+}
+
+// countsOf is every count a step drew on the line, in the order drawn.
+func countsOf(output, doing string) []int {
+	var counts []int
+	for _, draw := range strings.Split(output, clearLine) {
+		if _, rest, ok := strings.Cut(draw, doing+" "); ok {
+			var count int
+			fmt.Sscanf(rest, "%d of", &count)
+			counts = append(counts, count)
+		}
+	}
+	return counts
+}
+
+func TestTheScanCountsUpOnOneLineUntilTheFirstListReplacesIt(t *testing.T) {
+	home := homeWithTeams(t)
+	shell := machine()
+	shell.delay = 10 * time.Millisecond
+	opts, out := options(t, home, shell)
+	slow := terminalOf{size: wide.size, after: 20 * time.Millisecond}
+	script, err := slow.guided(t, opts,
+		on("Install into which harnesses?", enter),
+		on("skills repo of your own", enter),
+		on("Where do your repos live?", enter),
+		on("Linear team key, Enter for none", enter),
+		on("Which repos track their work in GitHub Issues?", enter),
+		on("Which tools?", enter),
+		on("Open 8 pull requests?", typed("n")),
+		on("Apply?", enter),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	shown := out.String()
+	counts := countsOf(shown, "reading repos")
+	if len(counts) == 0 || !slices.IsSorted(counts) || counts[len(counts)-1] != 8 {
+		t.Fatalf("the repos count did not climb to 8 in place: %v in\n%q", counts, shown)
+	}
+	expectAll(t, shown,
+		clearLine+"reading repos 8 of 8, asking gh about origins"+clearLine+"linear  none\ngithub-issues  8 repos\n",
+		clearLine+"checking tools 3 of 3, looking up latest versions 2 of 2"+clearLine+"tools  ",
+	)
+	if list := script.frame("Which repos track their work in GitHub Issues?"); strings.Contains(list, "reading repos") {
+		t.Fatalf("the line is still up under the list:\n%s", list)
+	}
+}
+
+func TestAScanThatEndsInsideASecondShowsNoLine(t *testing.T) {
+	home := homeWithRepos(t)
+	opts, out := options(t, home, machine())
+	quick := terminalOf{size: wide.size, after: time.Second}
+	_, err := quick.guided(t, opts,
+		on("Install into which harnesses?", enter),
+		on("skills repo of your own", enter),
+		on("Where do your repos live?", enter),
+		on("Linear team key, Enter for none", enter),
+		on("Which repos track their work in GitHub Issues?", enter),
+		on("Which repos track their work in markdown tasks in the repo?", enter),
+		on("Which tools?", enter),
+		on("Open 1 pull request?", typed("n")),
+		on("Apply?", enter),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if shown := out.String(); strings.Contains(shown, "\r") || strings.Contains(shown, "reading repos") {
+		t.Fatalf("a line showed for a three-repo scan:\n%q", shown)
+	}
+}
+
+func TestATerminalThatReportsNoSizeStillShowsTheLists(t *testing.T) {
+	home := homeWithRepos(t)
+	opts, out := options(t, home, machine())
+	unsized := terminalOf{size: tea.WindowSizeMsg{}, after: time.Hour}
+	script, err := unsized.guided(t, opts,
+		on("Install into which harnesses?", enter),
+		on("skills repo of your own", enter),
+		on("Where do your repos live?", enter),
+		on("Linear team key, Enter for none", enter),
+		on("Which repos track their work in GitHub Issues?", enter),
+		on("Which repos track their work in markdown tasks in the repo?", enter),
+		on("Which tools?", enter),
+		on("Open 1 pull request?", typed("n")),
+		on("Apply?", enter),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if list := script.frame("Which repos track their work in GitHub Issues?"); !strings.Contains(list, "✓ bravo") || !strings.Contains(list, "• charlie") {
+		t.Fatalf("the list did not draw at no size:\n%s", list)
+	}
+	expectAll(t, out.String(), "github-issues  1 repo\n", `bravo  wrote "Tracker: github-issues"`)
 }

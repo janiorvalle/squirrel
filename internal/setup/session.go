@@ -523,6 +523,7 @@ func (s *Session) Close() {
 // outdated tool works out who updates it.
 func checkTools(ctx context.Context, opts Options, list []tools.Tool) []toolStatus {
 	var statuses []toolStatus
+	checking := counting(opts.Progress, "checking tools", len(list))
 	for _, tool := range list {
 		status := toolStatus{tool: tool, present: opts.Shell(ctx, tool.Check, io.Discard) == nil}
 		if status.present {
@@ -530,6 +531,7 @@ func checkTools(ctx context.Context, opts Options, list []tools.Tool) []toolStat
 			status.installed = installedVersion(ctx, opts, status)
 		}
 		statuses = append(statuses, status)
+		checking.finished()
 	}
 	lookupLatest(ctx, opts, statuses)
 	where := &locator{ctx: ctx, opts: opts}

@@ -131,16 +131,19 @@ func syncRepos(ctx context.Context, opts Options, names []string) []skillRepo {
 
 func syncRepo(ctx context.Context, opts Options, name string) skillRepo {
 	repo := skillRepo{name: name, dir: filepath.Join(opts.Home, ".squirrel", "repos", filepath.FromSlash(name))}
-	command, verb := "gh repo clone "+name+" "+quote(runtime.GOOS, repo.dir), "cloned"
+	command, verb, doing := "gh repo clone "+name+" "+quote(runtime.GOOS, repo.dir), "cloned", "cloning "+name
 	if isDir(filepath.Join(repo.dir, ".git")) {
-		command, verb = pullLine(runtime.GOOS, name, repo.dir), "pulled"
+		command, verb, doing = pullLine(runtime.GOOS, name, repo.dir), "pulled", "pulling "+name
 	} else if err := os.MkdirAll(filepath.Dir(repo.dir), 0o755); err != nil {
 		repo.failure = fmt.Sprintf("cannot create %s: %v; make the home folder writable", display(opts.Home, filepath.Dir(repo.dir)), err)
 		return repo
 	}
 	var output bytes.Buffer
 	repo.verb = verb
-	if err := opts.Shell(ctx, command, &output); err != nil {
+	syncing := counting(opts.Progress, doing, 1)
+	err := opts.Shell(ctx, command, &output)
+	syncing.finished()
+	if err != nil {
 		reason := fmt.Sprintf("`%s` failed: %v%s; if the repo is private, check `gh auth status`", command, err, lastLine(output.String()))
 		if verb == "cloned" {
 			repo.failure = reason

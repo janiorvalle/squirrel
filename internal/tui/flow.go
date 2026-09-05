@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"strings"
+	"time"
 
 	"github.com/charmbracelet/huh"
 
@@ -26,12 +27,15 @@ var ErrQuit = errors.New("quit")
 // before that; the skills repo clone under ~/.squirrel/repos is synced as
 // soon as it's named, since its collisions are the next question.
 func Run(ctx context.Context, opts setup.Options) error {
+	waiting := newWait(opts.Stdout, time.Second)
+	show := terminal(opts.Stdin, opts.Stdout, waiting)
+	opts.Progress, opts.Stdout = waiting.report, waiting
 	session, err := setup.Start(opts)
 	if err != nil {
 		return err
 	}
 	defer session.Close()
-	return run(ctx, session, opts, terminal(opts.Stdin, opts.Stdout))
+	return run(ctx, session, opts, show)
 }
 
 // direction is which way a step is entered: forward from the one before
