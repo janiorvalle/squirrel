@@ -3,6 +3,7 @@ package tui
 import (
 	"bytes"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -14,8 +15,27 @@ const (
 	tick      = 10 * time.Millisecond
 )
 
+// tty is what the line is drawn on, read by the test while the
+// wait's timer draws.
+type tty struct {
+	guard sync.Mutex
+	held  bytes.Buffer
+}
+
+func (term *tty) Write(text []byte) (int, error) {
+	term.guard.Lock()
+	defer term.guard.Unlock()
+	return term.held.Write(text)
+}
+
+func (term *tty) String() string {
+	term.guard.Lock()
+	defer term.guard.Unlock()
+	return term.held.String()
+}
+
 // eventually waits up to a second for out to hold text.
-func eventually(t *testing.T, out *bytes.Buffer, text string) {
+func eventually(t *testing.T, out *tty, text string) {
 	t.Helper()
 	for deadline := time.Now().Add(time.Second); time.Now().Before(deadline); time.Sleep(time.Millisecond) {
 		if strings.Contains(out.String(), text) {
@@ -26,10 +46,10 @@ func eventually(t *testing.T, out *bytes.Buffer, text string) {
 }
 
 func TestTheLineShowsAfterTheDelayAndRedrawsInPlace(t *testing.T) {
-	var out bytes.Buffer
+	var out tty
 	waiting := newWait(&out, tick)
 	waiting.report(setup.Progress{Doing: "reading repos", Done: 0, Total: 5})
-	if out.Len() != 0 {
+	if out.String() != "" {
 		t.Fatalf("shown before the delay: %q", out.String())
 	}
 	eventually(t, &out, clearLine+"reading repos 0 of 5")
@@ -43,19 +63,19 @@ func TestTheLineShowsAfterTheDelayAndRedrawsInPlace(t *testing.T) {
 }
 
 func TestAWaitThatEndsInsideTheDelayShowsNothing(t *testing.T) {
-	var out bytes.Buffer
+	var out tty
 	waiting := newWait(&out, tick)
 	waiting.report(setup.Progress{Doing: "reading repos", Done: 0, Total: 3})
 	waiting.report(setup.Progress{Doing: "reading repos", Done: 3, Total: 3})
 	waiting.clear()
 	time.Sleep(5 * tick)
-	if out.Len() != 0 {
+	if out.String() != "" {
 		t.Fatalf("drew %q", out.String())
 	}
 }
 
 func TestAPrintThroughTheWaitTakesTheLineOffFirst(t *testing.T) {
-	var out bytes.Buffer
+	var out tty
 	waiting := newWait(&out, tick)
 	waiting.report(setup.Progress{Doing: "pulling me/skills", Done: 0, Total: 1})
 	eventually(t, &out, clearLine+"pulling me/skills")
