@@ -64,6 +64,8 @@ func (s *screen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return s, nil
 	}
 	if size, ok := msg.(tea.WindowSizeMsg); ok {
+		size = sized(size)
+		msg = size
 		// One line stays free for the help below the form.
 		s.form = s.form.WithHeight(size.Height - 1)
 	}
@@ -130,12 +132,26 @@ func (s *screen) bindings() []key.Binding {
 	return append(enabled, escape)
 }
 
+// fallbackSize stands in for a terminal that reports no size, a pty
+// nothing sized: the classic 80 by 24. Without it the list's filter
+// input gets a negative width and bubbles panics.
+var fallbackSize = tea.WindowSizeMsg{Width: 80, Height: 24}
+
+func sized(size tea.WindowSizeMsg) tea.WindowSizeMsg {
+	if size.Width <= 0 || size.Height <= 0 {
+		return fallbackSize
+	}
+	return size
+}
+
 // runner runs one screen to its end and hands it back with its outcome.
 type runner func(*screen) error
 
-// terminal is the runner on a real terminal.
-func terminal(in io.Reader, out io.Writer) runner {
+// terminal is the runner on a real terminal: the wait line comes off,
+// then the screen takes the terminal.
+func terminal(in io.Reader, out io.Writer, waiting *wait) runner {
 	return func(s *screen) error {
+		waiting.clear()
 		_, err := tea.NewProgram(s, tea.WithInput(in), tea.WithOutput(out)).Run()
 		return err
 	}

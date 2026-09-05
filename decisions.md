@@ -244,3 +244,9 @@ Written 2026-09-05, for issue 50.
 With 143 checkouts and 120 origins the screen went blank for over a minute after the harness screen: five git commands per repo and one `gh repo view` per origin, over 800 processes one after another. Now `Session.Trackers` reads every repo through a pool of eight workers, then asks gh about the distinct origins through the same pool, results written back by index so the questions keep their name order. Eight, because a two-core machine must not fork 800 processes, and eight puts a hundred repos under a few seconds. A cancelled context hands out no more work.
 
 What gh said about each origin it could see is saved in the config as `origins`, push URL to issues and when, pruned on apply to the origins the scan met. An origin gh couldn't see is asked again next run, since a failure isn't a fact. The push URL loses what stands before the host, over http a token. `--ask-trackers-again` clears the map along with the skips. The flag path runs no git or gh and keeps the map. Issue 49's live count wraps the per-index work in `forEach`.
+
+## Setup says what it's doing while the tracker scan runs
+
+Written 2026-09-05, for issue 49.
+
+The scan from issue 50 still left the terminal blank for seconds, a minute on a slow disk or network, so it looked hung. Now `Options.Progress` takes each step of a wait as it moves, and the terminal draws one line in place, "reading repos 37 of 143, asking gh about origins 12 of 120", once the wait has run a second, so a three-repo scan flickers nothing. The flag path passes no callback and prints nothing new. The skills repo pull and the tools step got the same line, since either runs over a second on a slow network. Whatever comes next takes the line off: a screen, or any line setup prints, since setup prints through the writer that holds it. A pty that reports no size gets 80 by 24, where before the list's filter input panicked.

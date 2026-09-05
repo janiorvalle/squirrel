@@ -11,12 +11,53 @@ import (
 // two-core machine.
 const scanWorkers = 8
 
-// forEach runs work for every index below count, scanWorkers at a time,
-// and hands out no more indexes once ctx is done. Each call writes its own
-// slot, so a caller reads results by index and the input's order holds
-// whatever order the calls finish in. A count that runs the scan is the
-// place a progress callback would wrap work.
-func forEach(ctx context.Context, count int, work func(index int)) {
+// Progress is one step of a wait between two screens, for a terminal to
+// show while nothing else is on it: what setup is doing, how many commands
+// the step runs, and how many have finished.
+type Progress struct {
+	Doing string
+	Done  int
+	Total int
+}
+
+// counted is a step being counted up as its work finishes. Each finish
+// goes to Options.Progress, one call at a time, from whichever goroutine
+// finished. A step with nothing to do reports nothing, and neither does a
+// run with no Progress, the flag path.
+type counted struct {
+	report func(Progress)
+	step   Progress
+	guard  sync.Mutex
+}
+
+// counting starts a step and reports it at zero, so a wait shows from its
+// first moment and not from its first finish.
+func counting(report func(Progress), doing string, total int) *counted {
+	c := &counted{report: report, step: Progress{Doing: doing, Total: total}}
+	c.tell()
+	return c
+}
+
+func (c *counted) finished() {
+	c.guard.Lock()
+	defer c.guard.Unlock()
+	c.step.Done++
+	c.tell()
+}
+
+func (c *counted) tell() {
+	if c.report != nil && c.step.Total > 0 {
+		c.report(c.step)
+	}
+}
+
+// forEach runs work for every index below the step's total, scanWorkers
+// at a time, counting the step up as each finishes, and hands out no more
+// indexes once ctx is done. Each call writes its own slot, so a caller
+// reads results by index and the input's order holds whatever order the
+// calls finish in.
+func forEach(ctx context.Context, step *counted, work func(index int)) {
+	count := step.step.Total
 	indexes := make(chan int)
 	var workers sync.WaitGroup
 	for range min(count, scanWorkers) {
@@ -25,6 +66,7 @@ func forEach(ctx context.Context, count int, work func(index int)) {
 			defer workers.Done()
 			for index := range indexes {
 				work(index)
+				step.finished()
 			}
 		}()
 	}
@@ -38,7 +80,7 @@ func forEach(ctx context.Context, count int, work func(index int)) {
 // readRepoStates is readRepoState for every repo, in the repos' order.
 func readRepoStates(ctx context.Context, opts Options, repos []trackerRepo) []repoState {
 	states := make([]repoState, len(repos))
-	forEach(ctx, len(repos), func(index int) {
+	forEach(ctx, counting(opts.Progress, "reading repos", len(repos)), func(index int) {
 		states[index] = readRepoState(ctx, opts, repos[index].dir)
 	})
 	return states
@@ -47,7 +89,7 @@ func readRepoStates(ctx context.Context, opts Options, repos []trackerRepo) []re
 // readOrigins is readOrigin for every URL, in the URLs' order.
 func readOrigins(ctx context.Context, opts Options, urls []string) []originFacts {
 	facts := make([]originFacts, len(urls))
-	forEach(ctx, len(urls), func(index int) {
+	forEach(ctx, counting(opts.Progress, "asking gh about origins", len(urls)), func(index int) {
 		facts[index] = readOrigin(ctx, opts, urls[index])
 	})
 	return facts

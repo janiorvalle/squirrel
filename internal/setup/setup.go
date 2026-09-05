@@ -56,6 +56,10 @@ type Options struct {
 	Shell            Shell
 	Latest           Latest
 	Now              func() time.Time
+	// Progress takes each step of a wait between two screens as it moves,
+	// for a terminal to show a count while the tracker scan runs. Nil
+	// shows nothing, and the flag path passes nil.
+	Progress func(Progress)
 }
 
 type assets struct {
@@ -294,7 +298,7 @@ func versionPrinted(ctx context.Context, opts Options, line string) string {
 // pinned tool's latest is its pin, no lookup: the registry may be further
 // along, but the pin is what the install line installs.
 func lookupLatest(ctx context.Context, opts Options, statuses []toolStatus) {
-	var wait sync.WaitGroup
+	var lookups []*toolStatus
 	for index := range statuses {
 		if statuses[index].tool.Version == "" {
 			continue
@@ -303,13 +307,19 @@ func lookupLatest(ctx context.Context, opts Options, statuses []toolStatus) {
 			statuses[index].latest = pin
 			continue
 		}
+		lookups = append(lookups, &statuses[index])
+	}
+	looking := counting(opts.Progress, "looking up latest versions", len(lookups))
+	var wait sync.WaitGroup
+	for _, status := range lookups {
 		wait.Add(1)
-		go func(status *toolStatus) {
+		go func() {
 			defer wait.Done()
 			if latest, err := opts.Latest(ctx, status.tool); err == nil {
 				status.latest = latest
 			}
-		}(&statuses[index])
+			looking.finished()
+		}()
 	}
 	wait.Wait()
 }
