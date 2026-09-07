@@ -37,7 +37,7 @@ The human asks by wall clock. Answer with what three commands say, never from me
 
 Never say "ready" on a worker's word. For every turn-in:
 
-1. Read the PR body and the full diff of every non-test file, from your own checkout, never inside the worker's worktree.
+1. Read the PR body and the full diff, tests included, from your own checkout, never inside the worker's worktree. A test that pins the wrong behavior is the finding most often missed.
 2. Check the checks, and that the branch is rebased on the base and mergeable.
 3. Build it and run the tests yourself. Run the feature the way a person would, in a throwaway home.
 4. Confirm the evidence is on the ticket and the review gate's last verdict is clean on the pushed head, read from the file, not the summary.
@@ -48,7 +48,7 @@ A gate that isn't clean is a turn-in that isn't ready, whatever the worker's rep
 
 ## After the merge
 
-Pull, verify on the base, complete the ticket the way the tracker skill says, release the lock, remove the worktree and branch, and tell any running worker that the base moved. Then say what's dispatchable now and what's blocked behind what.
+Pull, verify on the base, record that verification on the ticket, release the lock, remove the worktree and branch, and tell any running worker that the base moved. Closing the ticket is the human's, the way the tracker skill says; the lead never completes work it directed. Then say what's dispatchable now and what's blocked behind what.
 
 ## What's pending the human
 
