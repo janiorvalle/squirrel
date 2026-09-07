@@ -14,7 +14,7 @@ One file per task, written before the worker exists. It carries:
 - The ticket pointer and the tracker's claim and turn-in commands for this repo.
 - What is true now: the files involved, what merged recently, what another worker owns at the same time.
 - The design already settled, with "don't relitigate" on it, and every ruling the human has made that touches this task, in the human's words.
-- Things not to do: never file a ticket; never create anything under the human's accounts beyond what the task itself needs, which is the tracker's own claim and turn-in writes, the PR, and the evidence the tracker skill allows; never run anything against the human's real home or real credentials; expect a rebase and do it before the review gate.
+- Things not to do: never file a ticket; never create anything under the human's accounts beyond what the task itself needs, which is the tracker's own claim and turn-in writes, the PR, and the evidence the tracker skill allows; never run what is being built against the human's real home, keychain, or environments, while git, the PR, and the tracker use the login already on the machine; expect a rebase and do it before the review gate.
 - What counts as proof, the gate order, and the report-back shape with a word cap.
 
 Copy the last brief that worked. A brief the worker has to ask about was too short.
