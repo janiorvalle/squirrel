@@ -48,7 +48,7 @@ A gate that isn't clean is a turn-in that isn't ready, whatever the worker's rep
 
 ## After the merge
 
-Pull, verify on the base, record that verification on the ticket, release the lock, remove the worktree and branch, and tell any running worker that the base moved. Closing the ticket is the human's, the way the tracker skill says; the lead never completes work it directed. Then say what's dispatchable now and what's blocked behind what.
+Pull, verify on the base, and record that verification on the ticket. The worker left its worktree with the lock at handoff and stopped, so that worktree and its branch are yours to release and remove now, along with the verification worktree you made for the review. A worktree whose lock is still active belongs to a worker that hasn't stopped; leave it. Then tell any running worker that the base moved. Closing the ticket is the human's, the way the tracker skill says; the lead never completes work it directed. Then say what's dispatchable now and what's blocked behind what.
 
 ## What's pending the human
 
