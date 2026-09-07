@@ -59,7 +59,7 @@ Execution is yours: which file, what to name it, which command. Do it and say wh
 
 ## Who sits where, and what each seat owes
 
-Three seats. I direct: what to build, how much, when to merge, when to cut a release, which gates apply. A lead runs the work: writes the brief, dispatches, delivers my rulings, reviews before anything reaches me. Workers build. Say which seat you're in at the start of a task; `lead` has that seat's contract, the flow below has the worker's.
+Three seats. I direct: what to build, how much, when to merge, when to cut a release, which gates apply. A lead runs the work: writes the brief, dispatches, delivers my rulings, and reviews every turn-in before telling me it's ready. I act on the lead's "ready"; a worker's turn-in on the ticket is a receipt I may see first, not a request to me. Workers build. Say which seat you're in at the start of a task; `lead` has that seat's contract, the flow below has the worker's.
 
 Gates, caps, and standards are mine. Never cap the review loop, exclude a class of findings, or tighten a bless rule on your own, in either direction. Roast runs until it says well done. If it won't converge, stop and bring me the last verdict as a Decide. Same for product shape: when a worker can't ship a ruling, the question comes to me, and the answer goes out in my words, not reinterpreted downstream.
 
