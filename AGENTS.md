@@ -57,6 +57,14 @@ If we can't answer with a single word, the request isn't ready. `voice` has the 
 
 Execution is yours: which file, what to name it, which command. Do it and say what you chose. Scope is ours: what to build and how much of it. Anything that widens or reshapes the ask gets confirmed first, and if you aren't sure whether something is inside the ask, it isn't. If running something would answer the question, run it. Irreversible actions always pause. `ask-about-scope-not-execution` draws the line.
 
+## Who sits where, and what each seat owes
+
+Three seats. I direct: what to build, how much, when to merge, when to cut a release, which gates apply. A lead runs the work: writes the brief, dispatches, delivers my rulings, reviews before anything reaches me. Workers build. Say which seat you're in at the start of a task; `lead` has that seat's contract, the flow below has the worker's.
+
+Gates, caps, and standards are mine. Never cap the review loop, exclude a class of findings, or tighten a bless rule on your own, in either direction. Roast runs until it says well done. If it won't converge, stop and bring me the last verdict as a Decide. Same for product shape: when a worker can't ship a ruling, the question comes to me, and the answer goes out in my words, not reinterpreted downstream.
+
+What's pending me is a Decide block or nothing. Never a footer, never a reminder line. I answer by number, one line per decision, so give me numbered questions. When I say explain, explain and stop; the dispatch is one line from me afterward. A ruling I make while a worker is building reaches that worker, acknowledged, before its next turn-in; a ruling that crosses a turn-in costs an hour. A check-in is evidence from commands, the last commit, the last review round, findings new against repeated, and an expected finish; never reassurance from memory. Don't push early starts and don't file what I've held. Offer more only when I ask for more.
+
 ## Git: commits and pull requests
 
 Titles in conventional commit style, naming the outcome, not the mechanism. PR descriptions open with the problem, then how you solved it, and end with a blurb naming the model and harness that made the change. `land-pr` has the examples and the landing procedure.
@@ -129,6 +137,7 @@ One line per skill, generated from each skill's own description. When a task mat
 - **how**. Use for "how does X work", a walkthrough before changing something, and placement questions like "where should this live" or "which package owns this". Explains a subsystem, a feature flow, or a runtime path at the depth a senior engineer needs to start working in it. For why it's built that way, use why.
 - **interrogate**. Use for "interrogate this", "tear this apart", "find the blind spots", or a contested design before it ships. Sends the same diff and rubric to one reviewer per model, merges findings by consensus, then you as lead sort them into act on, consider, noted, dismissed. Never auto-applies. Roast is the required gate. This is the deeper optional pass.
 - **land-pr**. Use every time a change is ready to leave the machine. When the human says commit, push, open a PR, ship it, land it, or finish up, or when a task's last step is getting a change reviewed. Covers branch rules, the gate order, commit titles, PR descriptions, proof, and where it stops.
+- **lead**. Use when you direct workers who build the change instead of building it yourself: writing the brief, dispatching, carrying the human's rulings to a worker, checking in, reviewing a turn-in before the human sees it, and closing out after the merge. The worker's flow is in squirrel; this is the seat above it.
 - **markup-from-image**. Use to turn a screenshot, Figma export, mockup, wireframe, or any UI image into semantic, unstyled HTML or JSX. A scaffold to style later, not a finished build. Not for extracting components or recreating the image as an asset.
 - **mockup**. Use for "mock this up", "show me what this would look like", "prototype this flow", or before building any UI where the shape isn't settled. One self-contained HTML file with a tab per state of the flow, so a person clicks through the whole thing with no backend. This is how design-it-twice and experience-first prototype.
 - **no-comments**. Use before review, or when asked to clean up comments. Spawns a comment reviewer with no attachment to the code, acts on what it flags, and offers to turn any real constraint into a type, test, or lint before deleting the comment that described it.
