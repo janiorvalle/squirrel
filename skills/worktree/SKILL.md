@@ -117,6 +117,6 @@ When the worktree is deleted or the human says it's done, release the lock. If i
 - Release or take over another agent's active lock without being told to.
 - Commit local setup changes unless asked.
 - Use a lock as a reason to overwrite someone's dirty files.
-- Enter another agent's worktree. A lead reads a worker's branch from its own checkout with `git fetch` and `git diff origin/<base>...origin/<branch>`, the base being the ref the lock recorded, and builds it in a worktree of its own; a `cd` into someone else's tree is how a stray commit lands on their branch.
+- Enter another agent's worktree. A lead reads a worker's branch from its own checkout, `git fetch` then `git diff origin/<base>...origin/<branch>` with the base the lock recorded, and builds it in a worktree of its own. A `cd` into someone else's tree is how a stray commit lands on their branch.
 
 When several repos are involved, run the flow for each one and make ports and project names distinct across the whole set.

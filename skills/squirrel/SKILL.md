@@ -11,7 +11,7 @@ A way of working, not a one-off command. Once it's on, it stays on for the conve
 
 1. The letter, `AGENTS.md` at the root of this repo, is already in your context. It states every principle and ends with a table of every workflow skill and when it applies. Open a skill's full file only when it applies.
 2. Write a todo list with the flow below in it. A skipped step stays in the list with `skip: <reason>`. Silent skips are how work gets lost.
-3. Say which seat you are in. Building the change: this flow. Directing workers who build it: `lead`, which carries the brief, the review before anything reaches the human, and the rules for rulings and check-ins.
+3. Say which seat you're in. Building the change: this flow. Directing the workers who build it: `lead`, which has the brief, the review before the human hears "ready", and the rules for rulings and check-ins.
 4. Check `tools.md` for anything the flow needs that isn't installed. Say so before starting and don't route around it. Install it the way `tools.md` says, `squirrel setup` for every tool setup can install, never the install command inside the tool's own skill.
 
 ## The flow
@@ -56,4 +56,4 @@ Every reply, doc, commit, and PR description goes through `voice`, clean the fir
 - Ask permission for reversible work.
 - Widen the ask without confirming.
 - Change a gate, a cap, or a bless standard without a Decide and a yes.
-- Leave a decision for the human in a footer or a reminder line.
+- Park a decision for the human in a footer or a reminder line.
