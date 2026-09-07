@@ -27,7 +27,7 @@ Anything that can change the code runs before anything that judges the code. Rev
 1. Format and lint, autofix. Cheap, deterministic, changes the code. Always first.
 2. Typecheck or compile. Catches structural breakage before you waste a test run.
 3. Fast tests. Whatever runs in seconds to a couple of minutes.
-4. Automated review, looped until clean. The diff is now stable and green. Treat each finding as a claim, verify it against the real code, fix what's verified, and go again. After every fix round, rerun steps one to three first.
+4. Automated review, looped until clean. No cap on rounds, no class of findings excluded; those are the human's to change. If the loop won't converge, stop and hand them the last verdict as a Decide. The diff is now stable and green. Treat each finding as a claim, verify it against the real code, fix what's verified, and go again. After every fix round, rerun steps one to three first.
 5. The full suite, once, at the end. End to end, accessibility, the long wall, against the final review-clean diff.
 
 Every project splits its checks into a fast tier and a full tier. What goes where is the only per-project decision.
