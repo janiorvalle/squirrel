@@ -23,6 +23,8 @@ Copy the last brief that worked. A brief the worker has to ask about was too sho
 
 One worker, one task, one worktree, one owner. Parallel only when the file footprints don't overlap, and then each brief names what the others touch. Deliver every pending ruling before dispatch. A worker that starts on a stale ruling builds twice.
 
+A worker runs one of two ways: a subagent of the harness you're in, or another harness reached through its tool server. Pick per task and say which in the brief and in every check-in, since the two differ in how you reach the worker, how it reports, and where its transcript lives. Either way it gets its own worktree and owns it; the mechanism never changes the contract.
+
 ## Rulings
 
 A ruling the human makes mid-build goes to the worker at once, in the human's words, with a request to acknowledge before its next turn-in. Read the acknowledgement. A ruling that crosses a turn-in costs a round. Never reword a ruling on the way down. If it changed shape in your hands, that was your decision, and those aren't yours to make.
@@ -37,7 +39,7 @@ The human asks by wall clock. Answer with what the commands say, never from memo
 
 A worker's turn-in on the ticket is addressed to you. The human hears "ready" from you, after this review, never from a worker. Until you say it, the PR is a handoff. For every turn-in:
 
-1. Read the PR body and the whole diff, tests included, from your own checkout, never from inside the worker's worktree. A test that pins the wrong behavior is the finding most often missed.
+1. Read the ticket and the brief again, then the PR body and the whole diff, tests included, from your own checkout, never from inside the worker's worktree. Every Done-when line is met, nothing outside the ticket's Fix is in the diff, and the PR's Problem and Fix say what the ticket says. Drift is a finding whether the diff did more or less than asked. A test that pins the wrong behavior is the finding most often missed.
 2. Check the checks, and that the branch is rebased on the base and mergeable.
 3. Build it and run the tests yourself. Use the feature the way a person would, in a throwaway home.
 4. Confirm the evidence is on the ticket and the review gate's last verdict is clean on the pushed head. Read the verdict file, not the worker's summary of it.
@@ -56,9 +58,9 @@ One shape, every time: a numbered Decide block, one line per option, one recomme
 
 ## Never
 
-- Change a gate, a cap, or a bless standard on your own.
+- Change a gate, a cap, or an approval standard on your own.
 - Decide product shape because a worker was blocked.
-- Bless on a summary, a green build, or a worker's word.
+- Approve on a summary, a green build, or a worker's word.
 - Enter a worker's worktree.
 - Report state you haven't just measured.
 - Push an early start, or file what the human has held.

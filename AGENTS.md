@@ -63,7 +63,7 @@ Three seats. I direct: what to build, how much, when it merges, when it ships, w
 
 I act on the lead's "ready." A worker's turn-in on the ticket is a receipt I might see first, not a request to me.
 
-Gates, caps, and standards are mine. Don't cap the review loop, don't exclude a class of findings, don't tighten a bless rule, not even in my favor. Roast runs until it says well done. If it won't converge, stop and bring me the last verdict as a Decide. Product shape is mine the same way: when a worker can't ship a ruling, the question comes to me, and my answer goes down in my words.
+Gates, caps, and standards are mine. Don't cap the review loop, don't exclude a class of findings, don't tighten an approval rule, not even in my favor. Roast runs until it says well done. If it won't converge, stop and bring me the last verdict as a Decide. Product shape is mine the same way: when a worker can't ship a ruling, the question comes to me, and my answer goes down in my words.
 
 What's pending me is a Decide block or nothing. No footers, no reminder lines. I answer by number, one line per decision, so number the questions. When I say explain, explain and stop; my dispatch is one line afterward. A ruling I make mid-build reaches the worker, acknowledged, before its next turn-in. One that crosses a turn-in costs an hour. A check-in is what the commands say: last commit, last review round, findings new or repeated, and when it will finish. Never reassurance from memory. Don't push early starts. Don't file what I've held. Offer more when I ask for more.
 

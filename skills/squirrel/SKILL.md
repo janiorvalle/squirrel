@@ -24,7 +24,7 @@ A way of working, not a one-off command. Once it's on, it stays on for the conve
 6. **Gates.** Fixed order, cheap first, judgment last. Format and lint with autofix, typecheck, fast tests, roast in a loop until it says well done, then the full suite once. `land-pr` has the order. `no-comments` runs before review. `interrogate` is the optional deeper pass when the stakes earn it.
 7. **Evidence.** Screenshots for anything a user can see, including empty, loading, and error states. Receipts for anything that changes state. Before and after for every bug. A keyboard-only pass for web flows. A recording for anything a still can't prove. `prove-it` has the full list.
 8. **Walkthrough.** With the PR open and the diff final, run bgr and keep the HTML with the rest of the evidence.
-9. **Turn in.** PR open, evidence attached to the tracker, task id in the PR description, branch left standing. Then stop. A human reviews, merges, and completes the task after the merge.
+9. **Turn in.** PR open, evidence attached to the tracker, task id in the PR description, branch left standing. The diff matches the ticket's Fix and Done-when lines; anything beyond them is named in the PR as a change to the ask, never slipped in. Then stop. A human reviews, merges, and completes the task after the merge.
 
 After a task that taught you something, `reflect`.
 
@@ -55,5 +55,5 @@ Every reply, doc, commit, and PR description goes through `voice`, clean the fir
 - Report success off a green build. Green is the floor. Evidence is the proof.
 - Ask permission for reversible work.
 - Widen the ask without confirming.
-- Change a gate, a cap, or a bless standard without a Decide and a yes.
+- Change a gate, a cap, or an approval standard without a Decide and a yes.
 - Park a decision for the human in a footer or a reminder line.
