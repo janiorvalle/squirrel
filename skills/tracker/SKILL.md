@@ -23,6 +23,31 @@ No line means nobody chose yet. Check for an open PR from a branch named `tracke
 
 Write the answer into that file on its own line under the title, or into a new `AGENTS.md` if the repo has neither file, in its own worktree on the branch `tracker-line`, and offer the one-line PR through gh. A push refused because the branch appeared meanwhile means another agent asked first, so confirm its PR. The line comes before the claim, which needs it, and its own branch keeps it out of the task's diff. When the file is a letter setup installs into harnesses, like squirrel's `AGENTS.md`, setup leaves the `Tracker:` line out of the installed block.
 
+## Proposing a ticket
+
+When you think something deserves a ticket, you don't file it, you show it. The whole ticket, already through the lint, then the title, then anything the human needs to judge it, then a Decide. The human answers with one word and the ticket goes in as shown, or says what to change. The shape:
+
+> Here's the ticket text, lint-clean at 119 words. Nothing is filed yet.
+>
+> Problem: API pytest takes 9 minutes on a backend PR even with two workers. The CI Postgres runs with fsync on, so tests that truncate every table pay for durability nobody needs, and one runner carries all 3,500 tests.
+>
+> Fix: The CI Postgres runs with the no-durability flags the repo's postgres-test service already uses. The suite is split by recorded durations across four runners with two workers each, so a PR waits for the slowest slice.
+>
+> Done when:
+> - API pytest on a backend PR finishes in about 4 minutes wall.
+> - Every test that passes today passes, each in exactly one slice.
+> - A new test without a recorded duration still lands in a slice.
+>
+> Title: API pytest runs in four slices on a Postgres that skips fsync, and a backend PR waits about 4 minutes.
+>
+> The splitting tool would be pytest-split 0.11.0, which depends only on pytest.
+>
+> Decide: file this ticket as written?
+> Options: yes, or say what to change.
+> Recommendation: yes.
+
+Mid-task, a follow-up you noticed is one sentence in your report; the human says which ones get this treatment.
+
 ## The five verbs
 
 1. **Claim** before touching project files. A ticket with an owner is taken, so pick another. Put your name on it and read it back; two agents can claim in the same second, and the earlier claim comment wins. Open your first message with the ticket id.
