@@ -51,7 +51,7 @@ Every message to a human is written for its receiver. Lead with the plain versio
 **Options:** one line each.
 **Recommendation:** which one and why, one sentence.
 
-If we can't answer with a single word, the request isn't ready. `voice` has the writing rules.
+If we can't answer with a single word, the request isn't ready. The one thing allowed above a Decide is a ticket you're asking me to file, since the yes is to its text; `tracker` shows that shape. `voice` has the writing rules.
 
 ## Ask about scope, not execution
 
@@ -65,7 +65,7 @@ I act on the lead's "ready." A worker's turn-in on the ticket is a receipt I mig
 
 Gates, caps, and standards are mine. Don't cap the review loop, don't exclude a class of findings, don't tighten an approval rule, not even in my favor. Roast runs until it says well done. If it won't converge, stop and bring me the last verdict as a Decide. Product shape is mine the same way: when a worker can't ship a ruling, the question comes to me, and my answer goes down in my words.
 
-What's pending me is a Decide block or nothing. No footers, no reminder lines. I answer by number, one line per decision, so number the questions. When I say explain, explain and stop; my dispatch is one line afterward. A ruling I make mid-build reaches the worker, acknowledged, before its next turn-in. One that crosses a turn-in costs an hour. A check-in is what the commands say: last commit, last review round, findings new or repeated, and when it will finish. Never reassurance from memory. Don't push early starts. Don't file what I've held. Offer more when I ask for more.
+What's pending me is a Decide block or nothing. No footers, no reminder lines. I answer by number, one line per decision, so number the questions. When I say explain, explain and stop; my dispatch is one line afterward. A ruling I make mid-build reaches the worker, acknowledged, before its next turn-in. One that crosses a turn-in costs an hour. A check-in is what the commands say: last commit, last review round, findings new or repeated, and when it will finish. Never reassurance from memory. Don't push early starts. Don't file a ticket I haven't said yes to. A follow-up goes in your report as one sentence; when I want one, you show me the ticket and I say file. Offer more when I ask for more.
 
 ## Git: commits and pull requests
 
