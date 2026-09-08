@@ -136,7 +136,7 @@ The PR title carries the issue key, `fix(web): SR-123 new threads respect the wo
 
 - Touch project files before the claim.
 - File a ticket the lint rejects.
-- File a ticket the human didn't ask for. Filing is theirs. What you would have filed goes in your report as one sentence, and they say which ones become tickets.
+- File a ticket the human hasn't said yes to, as shown. Filing is theirs, one ticket at a time. What you would have filed goes in your report as one sentence, and they say which ones to show them.
 - Put a file list or design notes in the ticket body. Files go in the claim comment, design notes in the PR.
 - Complete a ticket you built.
 - Commit a screenshot, a recording, or a walkthrough.
