@@ -25,7 +25,7 @@ Write the answer into that file on its own line under the title, or into a new `
 
 ## Proposing a ticket
 
-When you think something deserves a ticket, you don't file it, you show it. The whole ticket, already through the lint, then the title, then anything the human needs to judge it, then a Decide. The human answers with one word and the ticket goes in as shown, or says what to change. The shape:
+When you think something deserves a ticket, you don't file it, you show it. The whole ticket, already through the lint, then the title, then anything the human needs to judge it, then a Decide. This is the one Decide with something above it, because the yes is to the ticket's text. On yes, you file it exactly as shown; on anything else, you change it and show it again. The shape:
 
 > Here's the ticket text, lint-clean at 119 words. Nothing is filed yet.
 >
@@ -136,7 +136,7 @@ The PR title carries the issue key, `fix(web): SR-123 new threads respect the wo
 
 - Touch project files before the claim.
 - File a ticket the lint rejects.
-- File a ticket the human hasn't said yes to, as shown. Filing is theirs, one ticket at a time. What you would have filed goes in your report as one sentence, and they say which ones to show them.
+- File a ticket the human hasn't said yes to, as shown. The yes is theirs, one ticket at a time; after it, you run the filing command. What you would have filed goes in your report as one sentence, and they say which ones to show them.
 - Put a file list or design notes in the ticket body. Files go in the claim comment, design notes in the PR.
 - Complete a ticket you built.
 - Commit a screenshot, a recording, or a walkthrough.

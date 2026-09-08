@@ -51,7 +51,7 @@ Every message to a human is written for its receiver. Lead with the plain versio
 **Options:** one line each.
 **Recommendation:** which one and why, one sentence.
 
-If we can't answer with a single word, the request isn't ready. `voice` has the writing rules.
+If we can't answer with a single word, the request isn't ready. The one thing allowed above a Decide is a ticket you're asking me to file, since the yes is to its text; `tracker` shows that shape. `voice` has the writing rules.
 
 ## Ask about scope, not execution
 
