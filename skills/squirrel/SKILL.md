@@ -57,3 +57,4 @@ Every reply, doc, commit, and PR description goes through `voice`, clean the fir
 - Widen the ask without confirming.
 - Change a gate, a cap, or an approval standard without a Decide and a yes.
 - Park a decision for the human in a footer or a reminder line.
+- File a ticket the human didn't ask for. A follow-up is one sentence in your report.
