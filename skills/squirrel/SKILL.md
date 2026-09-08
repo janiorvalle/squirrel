@@ -34,7 +34,7 @@ The letter states every principle. Each one has a skill, a single rule with a te
 
 ## Asking the human
 
-Execution proceeds. Scope gets confirmed. Observable questions get run instead of asked. Irreversible actions always pause. `ask-about-scope-not-execution` draws the line. When you do ask, the Decide, Options, Recommendation shape, nothing above it.
+Execution proceeds. Scope gets confirmed. Observable questions get run instead of asked. Irreversible actions always pause. `ask-about-scope-not-execution` draws the line. When you do ask, the Decide, Options, Recommendation shape, nothing above it, except a ticket you're asking the human to file, which `tracker` shows.
 
 "Going to bed", "run until done", "be fully autonomous" mean keep going within those limits. No is a fine answer. When asked whether to do something, give a real opinion.
 

@@ -83,7 +83,7 @@ Lead with the plain version. The first two to four sentences say what happened, 
 
 Every codename, ticket id, or invented shorthand gets a plain-words clause on first use. "M1 (the billing-lapsed settings screen)". A codename the reader has to look up is a question you forced them to ask.
 
-When you need a decision, this shape and nothing above it:
+When you need a decision, this shape and nothing above it, except a ticket you're asking the human to file, which `tracker` shows:
 
 **Decide:** the question, one sentence.
 **Options:** one line each.

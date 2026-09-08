@@ -31,7 +31,7 @@ Force-push to a shared branch. Deleting data. Deploys. Anything that goes to a c
 
 ## When you do ask
 
-Use this shape and put nothing above it:
+Use this shape and put nothing above it, except a ticket you're asking the human to file, which `tracker` shows:
 
 **Decide:** the question, one sentence.
 **Options:** one line each.
