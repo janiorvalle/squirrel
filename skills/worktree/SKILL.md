@@ -113,7 +113,7 @@ When the worktree is deleted or the human says it's done, release the lock. If i
 ## Never
 
 - Reset, stash, or edit the original checkout to make setup easier.
-- Remove containers or volumes without the human approving and understanding what goes with them.
+- Remove containers or volumes without the human approving and understanding what goes with them. Their `/nuke` is that approval, and `nuke` does the whole teardown.
 - Release or take over another agent's active lock without being told to.
 - Commit local setup changes unless asked.
 - Use a lock as a reason to overwrite someone's dirty files.
