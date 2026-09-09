@@ -6,7 +6,7 @@ branch. Then stop. Only the human runs this, and only through /nuke.
 
 Refuses when the branch has commits the remote doesn't, since that's the one
 thing nuke can't undo. Everything else goes."""
-import json, os, subprocess, sys
+import json, os, re, shutil, subprocess, sys
 
 def sh(*args, cwd=None, check=True):
     return subprocess.run(args, cwd=cwd, capture_output=True, text=True, check=check).stdout.strip()
@@ -66,20 +66,29 @@ def processes_for(tree, ports):
     agent left behind. Never this script's own process tree."""
     mine = {os.getpid(), os.getppid()}
     found = {}
-    try:
+    have_lsof = shutil.which("lsof") is not None
+    if have_lsof:
         for line in sh("lsof", "-nP", "-d", "cwd", "-Fpn", check=False).splitlines():
             if line.startswith("p"): pid = int(line[1:])
             elif line.startswith("n") and inside(line[1:], tree) and pid not in mine:
                 found[pid] = f"cwd {line[1:]}"
-    except (FileNotFoundError, ValueError):
-        pass
+    elif os.path.isdir("/proc"):
+        for entry in os.listdir("/proc"):
+            if not entry.isdigit() or int(entry) in mine: continue
+            try: cwd = os.readlink(f"/proc/{entry}/cwd")
+            except OSError: continue
+            if inside(cwd, tree): found[int(entry)] = f"cwd {cwd}"
+    else:
+        die("neither lsof nor /proc is available, so nuke can't see what runs in this tree; install lsof first")
     for name, port in (ports or {}).items():
-        try:
-            for pid in sh("lsof", "-nP", "-t", f"-iTCP:{port}", "-sTCP:LISTEN", check=False).split():
-                if int(pid) not in mine:
-                    found[int(pid)] = f"listening on {name} port {port}"
-        except (FileNotFoundError, ValueError):
-            pass
+        if have_lsof:
+            pids = sh("lsof", "-nP", "-t", f"-iTCP:{port}", "-sTCP:LISTEN", check=False).split()
+        elif shutil.which("ss"):
+            pids = re.findall(r"pid=(\d+)", sh("ss", "-ltnp", f"sport = :{port}", check=False))
+        else:
+            die(f"neither lsof nor ss is available, so nuke can't see who listens on port {port}")
+        for pid in pids:
+            if int(pid) not in mine: found[int(pid)] = f"listening on {name} port {port}"
     return found
 
 def pid_alive(pid):
@@ -98,19 +107,26 @@ def kill(pids):
         except ProcessLookupError: pass
 
 def containers_mounting(tree):
-    """Plain containers, compose or not, with a bind mount from inside the tree."""
-    names = []
+    """Plain containers, compose or not, with a bind mount from inside the
+    tree, and the named volumes they use, which `docker rm -v` leaves behind."""
+    names, volumes = [], []
+    if not shutil.which("docker"):
+        return names, volumes
+    listing = subprocess.run(["docker", "ps", "-aq"], capture_output=True, text=True)
+    if listing.returncode != 0:
+        die(f"docker is installed but not answering; nuke can't list containers ({listing.stderr.strip()[:120]})")
+    ids = listing.stdout.split()
+    if not ids: return names, volumes
     try:
-        ids = sh("docker", "ps", "-aq", check=False).split()
-        if not ids: return names
-        for c in json.loads(sh("docker", "inspect", *ids, check=False) or "[]"):
-            if any(inside(m.get("Source", ""), tree) for m in c.get("Mounts", []) if m.get("Type") == "bind"):
-                names.append(c["Name"].lstrip("/"))
-    except FileNotFoundError:
-        pass
+        containers = json.loads(sh("docker", "inspect", *ids))
     except (subprocess.CalledProcessError, json.JSONDecodeError) as e:
-        die(f"docker is installed but not answering; nuke can't list containers ({str(e)[:120]})")
-    return names
+        die(f"docker inspect failed; nuke can't tell which containers use this tree ({str(e)[:120]})")
+    for c in containers:
+        mounts = c.get("Mounts", [])
+        if any(inside(m.get("Source", ""), tree) for m in mounts if m.get("Type") == "bind"):
+            names.append(c["Name"].lstrip("/"))
+            volumes += [m["Name"] for m in mounts if m.get("Type") == "volume" and m.get("Name")]
+    return names, volumes
 
 def compose_projects_under(tree):
     """Compose projects whose config files live inside this worktree. Only
@@ -161,10 +177,14 @@ def main():
         must("docker", "compose", "-p", name, "down", "--volumes", "--remove-orphans", what=f"compose down of {name}")
     if projects:
         running.append("compose down with volumes: " + ", ".join(sorted(projects)))
-    mounted = containers_mounting(tree)
+    mounted, named_volumes = containers_mounting(tree)
     if mounted:
         must("docker", "rm", "-f", "-v", *mounted, what="removing containers " + ", ".join(mounted))
-        running.append("containers removed with their volumes: " + ", ".join(mounted))
+        line = "containers removed: " + ", ".join(mounted)
+        if named_volumes:
+            must("docker", "volume", "rm", *named_volumes, what="removing volumes " + ", ".join(named_volumes))
+            line += ", with named volume(s) " + ", ".join(named_volumes)
+        running.append(line)
     stack_line = "; ".join(running) or "nothing running for this worktree"
 
     lock_line = "no lock in the registry"
@@ -178,8 +198,11 @@ def main():
     sh("git", "worktree", "remove", "--force", tree)
     branch_line = f"{branch} kept, it's the main branch"
     if branch not in ("main", "master"):
-        sh("git", "branch", "-D", branch, check=False)
-        branch_line = f"{branch} deleted locally; the remote branch and any PR are untouched"
+        result = subprocess.run(["git", "branch", "-D", branch], capture_output=True, text=True)
+        if result.returncode == 0:
+            branch_line = f"{branch} deleted locally; the remote branch and any PR are untouched"
+        else:
+            branch_line = f"{branch} NOT deleted: {result.stderr.strip()[:160]}; delete it yourself"
 
     print(f"running   {stack_line}")
     print(f"worktree  {tree} removed" + (f", {dirty} uncommitted file(s) went with it" if dirty else ""))
