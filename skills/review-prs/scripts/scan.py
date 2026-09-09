@@ -51,9 +51,12 @@ def main():
     a = settings()
     if subprocess.run(["gh", "auth", "status"], capture_output=True).returncode:
         sys.exit("gh is not authenticated. Run: gh auth login")
+    root = os.path.expanduser(a.dir)
+    if not os.path.isdir(root):
+        sys.exit(f"{root} is not a directory. Pass --dir, or set dir in {CONFIG}.")
     lines = [
         line
-        for owner, name in checkouts(os.path.expanduser(a.dir))
+        for owner, name in checkouts(root)
         if (not a.org or owner == a.org) and not any(fnmatch.fnmatchcase(name, pattern) for pattern in a.exclude)
         for line in open_prs(owner, name)
     ]

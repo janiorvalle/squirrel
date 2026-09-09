@@ -22,6 +22,10 @@ def run(*args, env=None):
     return out
 
 
+def open_numbers(repo):
+    return {f"#{pr['number']}" for pr in json.loads(run("gh", "pr", "list", "--repo", repo, "--state", "open", "--json", "number"))}
+
+
 def main():
     work = tempfile.mkdtemp(prefix="squirrel-skills-smoke-", dir=os.environ.get("RUNNER_TEMP"))
     env = {**os.environ, "SQUIRREL_WORKTREE_REGISTRY": os.path.join(work, "worktree-locks.json")}
@@ -38,9 +42,12 @@ def main():
     checkout = os.path.join(scan_dir, "squirrel")
     run("git", "init", "-q", checkout)
     run("git", "-C", checkout, "remote", "add", "origin", origin)
-    listed = {f"#{pr['number']}" for pr in json.loads(run("gh", "pr", "list", "--repo", origin, "--state", "open", "--json", "number"))}
+    # gh's list is taken before and after the scan, so a PR that opens or closes mid-run can't fail the check.
+    before = open_numbers(origin)
     lines = run(sys.executable, SCAN, "--dir", scan_dir).splitlines()
-    assert {line.split("|")[1] for line in lines} == listed and len(lines) == len(listed), (lines, listed)
+    after = open_numbers(origin)
+    scanned = {line.split("|")[1] for line in lines}
+    assert before & after <= scanned <= before | after and len(lines) == len(scanned), (lines, before, after)
     for line in lines:
         assert line.startswith("squirrel|#") and line.count("|") >= 4, line
 
