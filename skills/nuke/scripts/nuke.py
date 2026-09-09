@@ -139,7 +139,7 @@ def containers_mounting(tree):
     ours = set(c["Id"] for c in containers if c["Name"].lstrip("/") in names)
     removable, kept = [], []
     for volume in sorted(set(volumes)):
-        users = set(sh("docker", "ps", "-aq", "--filter", f"volume={volume}", check=False).split()) - ours
+        users = [u for u in sh("docker", "ps", "-aq", "--filter", f"volume={volume}", check=False).split() if not any(full.startswith(u) for full in ours)]
         owner = sh("docker", "volume", "inspect", volume, "--format", "{{index .Labels \"com.docker.compose.project\"}}", check=False)
         if users or owner:
             kept.append(f"{volume} ({'used by ' + str(len(users)) + ' other container(s)' if users else 'owned by compose project ' + owner})")
