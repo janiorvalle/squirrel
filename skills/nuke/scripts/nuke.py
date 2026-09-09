@@ -55,25 +55,86 @@ def lock_field(tree, field):
     lock = lock_for(tree)
     return lock.get(field) if lock else None
 
+def inside(path, tree):
+    """True for the tree itself and anything under it, by real path."""
+    path, tree = os.path.realpath(path), os.path.realpath(tree)
+    return path == tree or path.startswith(tree + os.sep)
+
+def processes_for(tree, ports):
+    """Processes whose working directory is inside the tree, plus whatever is
+    listening on the ports the lock recorded: dev servers, watchers, shells an
+    agent left behind. Never this script's own process tree."""
+    mine = {os.getpid(), os.getppid()}
+    found = {}
+    try:
+        for line in sh("lsof", "-nP", "-d", "cwd", "-Fpn", check=False).splitlines():
+            if line.startswith("p"): pid = int(line[1:])
+            elif line.startswith("n") and inside(line[1:], tree) and pid not in mine:
+                found[pid] = f"cwd {line[1:]}"
+    except (FileNotFoundError, ValueError):
+        pass
+    for name, port in (ports or {}).items():
+        try:
+            for pid in sh("lsof", "-nP", "-t", f"-iTCP:{port}", "-sTCP:LISTEN", check=False).split():
+                if int(pid) not in mine:
+                    found[int(pid)] = f"listening on {name} port {port}"
+        except (FileNotFoundError, ValueError):
+            pass
+    return found
+
+def pid_alive(pid):
+    try: os.kill(pid, 0); return True
+    except ProcessLookupError: return False
+    except PermissionError: return True
+
+def kill(pids):
+    import signal, time
+    for pid in pids:
+        try: os.kill(pid, signal.SIGTERM)
+        except ProcessLookupError: pass
+    time.sleep(1)
+    for pid in pids:
+        try: os.kill(pid, signal.SIGKILL)
+        except ProcessLookupError: pass
+
+def containers_mounting(tree):
+    """Plain containers, compose or not, with a bind mount from inside the tree."""
+    names = []
+    try:
+        ids = sh("docker", "ps", "-aq", check=False).split()
+        if not ids: return names
+        for c in json.loads(sh("docker", "inspect", *ids, check=False) or "[]"):
+            if any(inside(m.get("Source", ""), tree) for m in c.get("Mounts", []) if m.get("Type") == "bind"):
+                names.append(c["Name"].lstrip("/"))
+    except FileNotFoundError:
+        pass
+    except (subprocess.CalledProcessError, json.JSONDecodeError) as e:
+        die(f"docker is installed but not answering; nuke can't list containers ({str(e)[:120]})")
+    return names
+
 def compose_projects_under(tree):
-    """Compose projects whose config files live inside this worktree, plus the
-    one its .env names. Nothing else, so the shared checkout's stack is safe."""
-    tree = os.path.realpath(tree) + os.sep
+    """Compose projects whose config files live inside this worktree. Only
+    that: a project name in the tree's .env proves nothing, since a copied
+    .env can name the main checkout's project."""
     names = set()
     try:
         rows = json.loads(sh("docker", "compose", "ls", "--all", "--format", "json") or "[]")
-    except (subprocess.CalledProcessError, FileNotFoundError, json.JSONDecodeError):
-        return names, "docker compose not available"
+    except FileNotFoundError:
+        return names
+    except (subprocess.CalledProcessError, json.JSONDecodeError) as e:
+        die(f"docker is installed but not answering, so nuke can't tell what runs for this tree; start it or stop it cleanly first ({str(e)[:120]})")
     for row in rows:
         files = row.get("ConfigFiles", "")
-        if any(os.path.realpath(f).startswith(tree) for f in files.split(",") if f):
+        if any(inside(f, tree) for f in files.split(",") if f):
             names.add(row["Name"])
-    env = os.path.join(tree, ".env")
-    if os.path.exists(env):
-        for line in open(env):
-            if line.startswith("COMPOSE_PROJECT_NAME="):
-                names.add(line.split("=", 1)[1].strip().strip('"\''))
-    return names, None
+    return names
+
+def must(*args, what):
+    """Run a teardown step and stop the whole nuke if it fails, before any
+    git happens, so nothing is ever half removed."""
+    result = subprocess.run(args, capture_output=True, text=True)
+    if result.returncode != 0:
+        die(f"{what} failed, nothing else touched:\n  " + (result.stderr or result.stdout).strip()[:400])
 
 def main():
     start = os.path.abspath(sys.argv[1]) if len(sys.argv) > 1 else os.getcwd()
@@ -87,18 +148,30 @@ def main():
         die(f"{branch} has {len(ahead)} commit(s) the remote doesn't ({against}); push them or delete them yourself first:\n  " + "\n  ".join(ahead))
     dirty = len(sh("git", "status", "--porcelain", cwd=tree).splitlines())
 
-    projects, note = compose_projects_under(tree)
-    stack_line = note or "no compose project under this worktree"
+    running = []
+    procs = processes_for(tree, lock_field(tree, "ports"))
+    if procs:
+        kill(list(procs))
+        left = [pid for pid in procs if pid_alive(pid)]
+        if left:
+            die(f"process(es) {left} survived SIGKILL; nothing else touched")
+        running.append(f"{len(procs)} process(es) killed: " + "; ".join(f"{pid} {why}" for pid, why in sorted(procs.items())))
+    projects = compose_projects_under(tree)
+    for name in sorted(projects):
+        must("docker", "compose", "-p", name, "down", "--volumes", "--remove-orphans", what=f"compose down of {name}")
     if projects:
-        for name in sorted(projects):
-            sh("docker", "compose", "-p", name, "down", "--volumes", "--remove-orphans", check=False)
-        stack_line = "down with volumes: " + ", ".join(sorted(projects))
+        running.append("compose down with volumes: " + ", ".join(sorted(projects)))
+    mounted = containers_mounting(tree)
+    if mounted:
+        must("docker", "rm", "-f", "-v", *mounted, what="removing containers " + ", ".join(mounted))
+        running.append("containers removed with their volumes: " + ", ".join(mounted))
+    stack_line = "; ".join(running) or "nothing running for this worktree"
 
     lock_line = "no lock in the registry"
     lock = lock_for(tree)
     if lock:
         script = os.path.join(os.path.dirname(__file__), "..", "..", "worktree", "scripts", "worktree_lock.py")
-        sh(sys.executable, script, "release", "--path", lock["path"], "--status", "released", check=False)
+        must(sys.executable, script, "release", "--path", lock["path"], "--status", "released", what="releasing the lock")
         lock_line = "released"
 
     os.chdir(main_root)
@@ -108,7 +181,7 @@ def main():
         sh("git", "branch", "-D", branch, check=False)
         branch_line = f"{branch} deleted locally; the remote branch and any PR are untouched"
 
-    print(f"stack     {stack_line}")
+    print(f"running   {stack_line}")
     print(f"worktree  {tree} removed" + (f", {dirty} uncommitted file(s) went with it" if dirty else ""))
     print(f"branch    {branch_line}")
     print(f"lock      {lock_line}")
