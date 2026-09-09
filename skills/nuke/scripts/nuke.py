@@ -20,26 +20,38 @@ def worktree_root(start):
     except subprocess.CalledProcessError:
         die(f"{start} is not inside a git worktree")
 
-def main_checkout(tree):
-    common = sh("git", "rev-parse", "--git-common-dir", cwd=tree)
-    return os.path.dirname(os.path.realpath(os.path.join(tree, common)))
+def common_git_dir(tree):
+    """The repository every worktree of this tree shares: the main checkout's
+    .git, or the bare repository itself. Git commands that outlive the tree
+    run against it."""
+    return os.path.realpath(os.path.join(tree, sh("git", "rev-parse", "--git-common-dir", cwd=tree)))
+
+def is_main_worktree(tree):
+    return os.path.realpath(os.path.join(tree, sh("git", "rev-parse", "--git-dir", cwd=tree))) == common_git_dir(tree)
 
 def unpushed(tree):
-    """Commits the remote doesn't have. With no upstream, the lock's base ref
-    stands in. With neither, nuke can't tell, so it refuses rather than guess."""
+    """Commits no remote branch has. Every remote is fetched first, so what
+    was deleted or force-pushed since the last fetch counts. When some remote
+    branch contains HEAD the work is safe, whichever branch the upstream
+    happens to be; otherwise the commits past the upstream, or past the
+    lock's base ref, are the ones at risk."""
+    if not sh("git", "remote", cwd=tree):
+        die("this repository has no remote, so nothing holds the branch's commits but this disk; nuke won't delete them")
+    if subprocess.run(["git", "fetch", "--all", "--quiet", "--prune"], cwd=tree, capture_output=True).returncode != 0:
+        die("can't reach the remote to check what's pushed; nothing touched")
+    holders = [ref.strip() for ref in sh("git", "branch", "-r", "--contains", "HEAD", cwd=tree).splitlines() if "->" not in ref]
+    if holders:
+        return [], holders[0]
     try:
         against = sh("git", "rev-parse", "--abbrev-ref", "@{upstream}", cwd=tree)
     except subprocess.CalledProcessError:
         against = lock_field(tree, "base_ref")
         if not against:
-            die("the branch has no upstream and no lock records its base, so nuke can't tell what's pushed; push the branch or set its upstream first")
-    remote = against.split("/", 1)[0] if "/" in against else None
-    if remote and subprocess.run(["git", "fetch", "--quiet", "--prune", remote], cwd=tree, capture_output=True).returncode != 0:
-        die(f"can't reach {remote} to check what's pushed; nothing touched")
+            die("no remote branch has this commit, the branch has no upstream, and no lock records its base, so nuke can't say what's pushed; push the branch first")
     try:
         return sh("git", "log", "--oneline", f"{against}..HEAD", cwd=tree).splitlines(), against
     except subprocess.CalledProcessError:
-        die(f"{against} is gone from the remote, so nothing there holds this branch's commits; push it again or delete it yourself first")
+        die(f"no remote branch has this commit and {against} is gone from the remote; push the branch again or delete it yourself first")
 
 def registry():
     path = os.environ.get("SQUIRREL_WORKTREE_REGISTRY") or os.path.expanduser("~/.config/squirrel/worktree-locks.json")
@@ -125,6 +137,10 @@ def pid_alive(pid):
 def kill(pids):
     import signal, time
     for pid in pids:
+        try: os.kill(pid, 0)
+        except PermissionError: die(f"pid {pid} runs in this tree as another user, so nuke can't stop it; stop it yourself first. Nothing touched")
+        except ProcessLookupError: pass
+    for pid in pids:
         try: os.kill(pid, signal.SIGTERM)
         except ProcessLookupError: pass
     time.sleep(1)
@@ -132,11 +148,21 @@ def kill(pids):
         try: os.kill(pid, signal.SIGKILL)
         except ProcessLookupError: pass
 
+def docker_present():
+    """True when the docker command is here. A daemon socket or DOCKER_HOST
+    with no command means containers may run unseen, so that stops the run."""
+    if shutil.which("docker"):
+        return True
+    sockets = ["/var/run/docker.sock", os.path.expanduser("~/.docker/run/docker.sock")]
+    if os.environ.get("DOCKER_HOST") or any(os.path.exists(p) for p in sockets):
+        die("a docker daemon is here but the docker command isn't on PATH, so nuke can't see the tree's containers; put docker on PATH first. Nothing touched")
+    return False
+
 def containers_mounting(tree):
     """Plain containers, compose or not, with a bind mount from inside the
     tree, and the named volumes they use, which `docker rm -v` leaves behind."""
     names, volumes = [], []
-    if not shutil.which("docker"):
+    if not docker_present():
         return names, [], []
     listing = subprocess.run(["docker", "ps", "-aq"], capture_output=True, text=True)
     if listing.returncode != 0:
@@ -170,10 +196,10 @@ def compose_projects_under(tree):
     that: a project name in the tree's .env proves nothing, since a copied
     .env can name the main checkout's project."""
     names = {}
+    if not docker_present():
+        return names
     try:
         rows = json.loads(sh("docker", "compose", "ls", "--all", "--format", "json") or "[]")
-    except FileNotFoundError:
-        return names
     except (subprocess.CalledProcessError, json.JSONDecodeError) as e:
         die(f"docker is installed but not answering, so nuke can't tell what runs for this tree; start it or stop it cleanly first ({str(e)[:120]})")
     for row in rows:
@@ -195,9 +221,9 @@ def main():
         die("nuke runs on macOS and Linux only; on Windows, stop the stack, run `git worktree remove --force`, and release the lock by hand")
     start = os.path.abspath(sys.argv[1]) if len(sys.argv) > 1 else os.getcwd()
     tree = worktree_root(start)
-    main_root = main_checkout(tree)
-    if os.path.abspath(tree) == main_root:
+    if is_main_worktree(tree):
         die(f"{tree} is the main checkout, not a worktree; nuke only removes worktrees")
+    git = ["git", f"--git-dir={common_git_dir(tree)}"]
     branch = sh("git", "rev-parse", "--abbrev-ref", "HEAD", cwd=tree)
     ahead, against = unpushed(tree)
     if ahead:
@@ -232,8 +258,8 @@ def main():
         running.append(line)
     stack_line = "; ".join(running) or "nothing running for this worktree"
 
-    os.chdir(main_root)
-    must("git", "worktree", "remove", "--force", tree, what="removing the worktree", done=running)
+    os.chdir(os.path.dirname(tree))
+    must(*git, "worktree", "remove", "--force", tree, what="removing the worktree", done=running)
 
     lock_line = "no lock in the registry"
     lock = lock_for(tree)
@@ -243,7 +269,7 @@ def main():
         lock_line = "released"
     branch_line = f"{branch} kept, it's the main branch"
     if branch not in ("main", "master"):
-        result = subprocess.run(["git", "branch", "-D", branch], capture_output=True, text=True)
+        result = subprocess.run([*git, "branch", "-D", branch], capture_output=True, text=True)
         if result.returncode == 0:
             branch_line = f"{branch} deleted locally; the remote branch and any PR are untouched"
         else:
