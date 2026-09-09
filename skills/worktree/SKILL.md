@@ -25,6 +25,8 @@ python3 scripts/worktree_lock.py release --path <worktree-path> --status release
 python3 scripts/worktree_lock.py release --path <worktree-path> --status handoff
 ```
 
+On Windows, where `python3` isn't a command, use `py -3`.
+
 Each entry:
 
 ```json

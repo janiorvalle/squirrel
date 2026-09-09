@@ -9,8 +9,27 @@ Usage:
 
 Registry: $SQUIRREL_WORKTREE_REGISTRY or ~/.config/squirrel/worktree-locks.json
 """
-import argparse, fcntl, json, os, sys
+import argparse, json, os, sys
 from datetime import datetime, timezone
+
+if os.name == "nt":
+    import msvcrt
+
+    # Windows locks a byte range, not a file. The first byte is the whole registry's lock,
+    # and the range may sit past the end of a registry that is still empty.
+    def lock(f):
+        f.seek(0); msvcrt.locking(f.fileno(), msvcrt.LK_LOCK, 1)
+
+    def unlock(f):
+        f.seek(0); msvcrt.locking(f.fileno(), msvcrt.LK_UNLCK, 1)
+else:
+    import fcntl
+
+    def lock(f):
+        fcntl.flock(f, fcntl.LOCK_EX)
+
+    def unlock(f):
+        fcntl.flock(f, fcntl.LOCK_UN)
 
 REGISTRY = os.environ.get("SQUIRREL_WORKTREE_REGISTRY") or os.path.expanduser("~/.config/squirrel/worktree-locks.json")
 
@@ -30,7 +49,7 @@ class Registry:
     def __enter__(self):
         os.makedirs(os.path.dirname(REGISTRY), exist_ok=True)
         self.f = open(REGISTRY, "a+")
-        fcntl.flock(self.f, fcntl.LOCK_EX)
+        lock(self.f)
         self.f.seek(0)
         raw = self.f.read()
         self.data = json.loads(raw) if raw.strip() else {"locks": []}
@@ -39,7 +58,7 @@ class Registry:
         self.f.seek(0); self.f.truncate()
         json.dump(self.data, self.f, indent=2); self.f.write("\n")
     def __exit__(self, *a):
-        fcntl.flock(self.f, fcntl.LOCK_UN); self.f.close()
+        unlock(self.f); self.f.close()
     def find(self, path):
         return next((l for l in self.data["locks"] if l["path"] == path), None)
 

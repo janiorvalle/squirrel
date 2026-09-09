@@ -31,11 +31,13 @@ Excludes are glob patterns on the repo name. Excluded repos never appear in outp
 
 ### 1. Scan
 
-Run `scripts/scan.sh` from this skill. Don't rewrite the scan by hand.
+Run `scripts/scan.py` from this skill. Don't rewrite the scan by hand.
 
 ```bash
-scripts/scan.sh [--dir DIR] [--org ORG] [--exclude PATTERN ...]
+python3 scripts/scan.py [--dir DIR] [--org ORG] [--exclude PATTERN ...]
 ```
+
+On Windows, where `python3` isn't a command, use `py -3`.
 
 It walks every git checkout under the directory, keeps the ones whose origin is on GitHub and matches the org filter if one is set, skips excludes, and prints one line per open PR: `repo|#number|title|url|author`. Repos with nothing open are silent.
 
