@@ -25,6 +25,10 @@ jobs:
           persist-credentials: false
       - name: Verify skills, index, and text rules
         run: python3 scripts/verify.py
+      - name: Skill scripts
+        env:
+          GH_TOKEN: ${{ github.token }} # the review-prs scan stops unless gh auth status passes
+        run: python3 scripts/skills-smoke.py
 
   go:
     name: Go
@@ -65,6 +69,10 @@ jobs:
           go build -buildvcs=false ./...
           go vet ./...
           go test -buildvcs=false ./...
+      - name: Skill scripts
+        env:
+          GH_TOKEN: ${{ github.token }} # the review-prs scan stops unless gh auth status passes
+        run: python scripts/skills-smoke.py
       - name: Installer and setup smoke
         shell: powershell
         env:
