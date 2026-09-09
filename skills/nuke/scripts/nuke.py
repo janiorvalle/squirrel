@@ -33,10 +33,13 @@ def unpushed(tree):
         against = lock_field(tree, "base_ref")
         if not against:
             die("the branch has no upstream and no lock records its base, so nuke can't tell what's pushed; push the branch or set its upstream first")
+    remote = against.split("/", 1)[0] if "/" in against else None
+    if remote and subprocess.run(["git", "fetch", "--quiet", "--prune", remote], cwd=tree, capture_output=True).returncode != 0:
+        die(f"can't reach {remote} to check what's pushed; nothing touched")
     try:
         return sh("git", "log", "--oneline", f"{against}..HEAD", cwd=tree).splitlines(), against
     except subprocess.CalledProcessError:
-        die(f"can't compare against {against}; fetch it or push the branch first")
+        die(f"{against} is gone from the remote, so nothing there holds this branch's commits; push it again or delete it yourself first")
 
 def registry():
     path = os.environ.get("SQUIRREL_WORKTREE_REGISTRY") or os.path.expanduser("~/.config/squirrel/worktree-locks.json")
@@ -75,31 +78,44 @@ def processes_for(tree, ports):
     listening on the ports the lock recorded: dev servers, watchers, shells an
     agent left behind. Never this script's own process tree."""
     mine = ancestors()
-    found = {}
-    have_lsof = shutil.which("lsof") is not None
-    if have_lsof:
+    cwds = working_directories()
+    found = {pid: f"cwd {cwd}" for pid, cwd in cwds.items() if inside(cwd, tree) and pid not in mine}
+    for name, port in (ports or {}).items():
+        for pid in listeners(port):
+            if pid in mine or pid in found: continue
+            if inside(cwds.get(pid, ""), tree):
+                found[pid] = f"listening on {name} port {port}"
+            elif "docker" in process_name(pid):
+                continue  # a published container port; the container teardown takes it
+            else:
+                die(f"port {port} ({name} in the lock) is held by pid {pid} {process_name(pid)}, whose working directory isn't in this tree, so the lock's port looks stale; stop it yourself or fix the lock first. Nothing touched")
+    return found
+
+def working_directories():
+    """Every visible process and its working directory."""
+    cwds = {}
+    if shutil.which("lsof"):
         for line in sh("lsof", "-nP", "-d", "cwd", "-Fpn", check=False).splitlines():
             if line.startswith("p"): pid = int(line[1:])
-            elif line.startswith("n") and inside(line[1:], tree) and pid not in mine:
-                found[pid] = f"cwd {line[1:]}"
+            elif line.startswith("n"): cwds[pid] = line[1:]
     elif os.path.isdir("/proc"):
         for entry in os.listdir("/proc"):
-            if not entry.isdigit() or int(entry) in mine: continue
-            try: cwd = os.readlink(f"/proc/{entry}/cwd")
+            if not entry.isdigit(): continue
+            try: cwds[int(entry)] = os.readlink(f"/proc/{entry}/cwd")
             except OSError: continue
-            if inside(cwd, tree): found[int(entry)] = f"cwd {cwd}"
     else:
         die("neither lsof nor /proc is available, so nuke can't see what runs in this tree; install lsof first")
-    for name, port in (ports or {}).items():
-        if have_lsof:
-            pids = sh("lsof", "-nP", "-t", f"-iTCP:{port}", "-sTCP:LISTEN", check=False).split()
-        elif shutil.which("ss"):
-            pids = re.findall(r"pid=(\d+)", sh("ss", "-ltnp", f"sport = :{port}", check=False))
-        else:
-            die(f"neither lsof nor ss is available, so nuke can't see who listens on port {port}")
-        for pid in pids:
-            if int(pid) not in mine: found[int(pid)] = f"listening on {name} port {port}"
-    return found
+    return cwds
+
+def listeners(port):
+    if shutil.which("lsof"):
+        return [int(p) for p in sh("lsof", "-nP", "-t", f"-iTCP:{port}", "-sTCP:LISTEN", check=False).split()]
+    if shutil.which("ss"):
+        return [int(p) for p in re.findall(r"pid=(\d+)", sh("ss", "-ltnp", f"sport = :{port}", check=False))]
+    die(f"neither lsof nor ss is available, so nuke can't see who listens on port {port}")
+
+def process_name(pid):
+    return sh("ps", "-o", "comm=", "-p", str(pid), check=False)
 
 def pid_alive(pid):
     try: os.kill(pid, 0); return True
@@ -175,6 +191,8 @@ def must(*args, what, done=()):
         die(f"{what} failed{so_far}\n  " + (result.stderr or result.stdout).strip()[:400])
 
 def main():
+    if os.name == "nt":
+        die("nuke runs on macOS and Linux only; on Windows, stop the stack, run `git worktree remove --force`, and release the lock by hand")
     start = os.path.abspath(sys.argv[1]) if len(sys.argv) > 1 else os.getcwd()
     tree = worktree_root(start)
     main_root = main_checkout(tree)
@@ -202,8 +220,7 @@ def main():
     for name, files in sorted(projects.items()):
         flags = [flag for f in files for flag in ("-f", f)]
         must("docker", "compose", "-p", name, *flags, "down", "--volumes", "--remove-orphans", what=f"compose down of {name}", done=running)
-    if projects:
-        running.append("compose down with volumes: " + ", ".join(sorted(projects)))
+        running.append(f"compose down with volumes: {name}")
     if mounted:
         must("docker", "rm", "-f", "-v", *mounted, what="removing containers " + ", ".join(mounted), done=running)
         line = "containers removed: " + ", ".join(mounted)
