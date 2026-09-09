@@ -10,9 +10,11 @@ on: # zizmor: ignore[dangerous-triggers] CLA writes signatures but never checks 
 
 permissions: {}
 
+# A comment on the PR must not cancel the check a push started: the two run
+# in separate groups, and only a newer push cancels an older one.
 concurrency:
-  group: cla-${{ github.event.pull_request.number || github.event.issue.number || github.run_id }}
-  cancel-in-progress: true
+  group: cla-${{ github.event_name }}-${{ github.event.pull_request.number || github.event.issue.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request_target' }}
 
 jobs:
   cla:
