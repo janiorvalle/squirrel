@@ -37,6 +37,8 @@ Run `scripts/scan.py` from this skill. Don't rewrite the scan by hand.
 python3 scripts/scan.py [--dir DIR] [--org ORG] [--exclude PATTERN ...]
 ```
 
+On Windows, where `python3` isn't a command, use `py -3`.
+
 It walks every git checkout under the directory, keeps the ones whose origin is on GitHub and matches the org filter if one is set, skips excludes, and prints one line per open PR: `repo|#number|title|url|author`. Repos with nothing open are silent.
 
 If `gh` isn't authenticated, stop and say so.

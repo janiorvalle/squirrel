@@ -3,7 +3,9 @@
 
 The worktree lock goes through claim, heartbeat, list, and release against a
 throwaway registry, and the review-prs scan walks a folder holding one throwaway
-checkout whose origin is this checkout's origin, so gh lists this repo's open PRs.
+checkout whose origin is this checkout's origin, so the scan lists this repo's
+open PRs and they are checked against gh's own list, then once more with a bad
+token to see the scan stop the way the skill says.
 Each command is printed before its output, so the CI log reads as a transcript.
 """
 import json, os, subprocess, sys, tempfile
@@ -36,8 +38,20 @@ def main():
     checkout = os.path.join(scan_dir, "squirrel")
     run("git", "init", "-q", checkout)
     run("git", "-C", checkout, "remote", "add", "origin", origin)
-    for line in run(sys.executable, SCAN, "--dir", scan_dir).splitlines():
+    listed = {f"#{pr['number']}" for pr in json.loads(run("gh", "pr", "list", "--repo", origin, "--state", "open", "--json", "number"))}
+    lines = run(sys.executable, SCAN, "--dir", scan_dir).splitlines()
+    assert {line.split("|")[1] for line in lines} == listed and len(lines) == len(listed), (lines, listed)
+    for line in lines:
         assert line.startswith("squirrel|#") and line.count("|") >= 4, line
+
+    print("$ GH_TOKEN=bad", sys.executable, SCAN, "--dir", scan_dir, flush=True)
+    unauthenticated = subprocess.run(
+        [sys.executable, SCAN, "--dir", scan_dir],
+        env={**os.environ, "GH_TOKEN": "bad", "GH_CONFIG_DIR": os.path.join(work, "no-gh-config")},
+        capture_output=True, encoding="utf-8",
+    )
+    print(unauthenticated.stderr, end="", flush=True)
+    assert unauthenticated.returncode == 1 and unauthenticated.stderr.strip() == "gh is not authenticated. Run: gh auth login", unauthenticated
 
 
 if __name__ == "__main__":
