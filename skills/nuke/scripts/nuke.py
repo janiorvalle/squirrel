@@ -88,20 +88,22 @@ def inside(path, tree):
 def processes_for(tree, ports):
     """Processes whose working directory is inside the tree, plus whatever is
     listening on the ports the lock recorded: dev servers, watchers, shells an
-    agent left behind. Never this script's own process tree."""
+    agent left behind. Never this script's own process tree. Ports docker
+    holds come back separately, for the container side to match."""
     mine = ancestors()
     cwds = working_directories()
     found = {pid: f"cwd {cwd}" for pid, cwd in cwds.items() if inside(cwd, tree) and pid not in mine}
+    docker_ports = {}
     for name, port in (ports or {}).items():
         for pid in listeners(port):
             if pid in mine or pid in found: continue
             if inside(cwds.get(pid, ""), tree):
                 found[pid] = f"listening on {name} port {port}"
-            elif "docker" in process_name(pid):
-                continue  # a published container port; the container teardown takes it
+            elif container_publishing(port):
+                docker_ports[str(port)] = name  # the container side finds which container, and whose
             else:
                 die(f"port {port} ({name} in the lock) is held by pid {pid} {process_name(pid)}, whose working directory isn't in this tree, so the lock's port looks stale; stop it yourself or fix the lock first. Nothing touched")
-    return found
+    return found, docker_ports
 
 def working_directories():
     """Every visible process and its working directory."""
@@ -129,6 +131,11 @@ def listeners(port):
 def process_name(pid):
     return sh("ps", "-o", "comm=", "-p", str(pid), check=False)
 
+def container_publishing(port):
+    """Whether some container publishes this host port. The listener itself
+    is docker's or OrbStack's helper, whose name says nothing."""
+    return docker_present() and bool(sh("docker", "ps", "-q", "--filter", f"publish={port}", check=False))
+
 def pid_alive(pid):
     try: os.kill(pid, 0); return True
     except ProcessLookupError: return False
@@ -149,20 +156,37 @@ def kill(pids):
         except ProcessLookupError: pass
 
 def docker_present():
-    """True when the docker command is here. A daemon socket or DOCKER_HOST
-    with no command means containers may run unseen, so that stops the run."""
+    """True when the docker command is here and talks to this machine. A
+    daemon socket or DOCKER_HOST with no command means containers may run
+    unseen, and a remote endpoint means the containers aren't this tree's,
+    so both stop the run."""
     if shutil.which("docker"):
+        endpoint = os.environ.get("DOCKER_HOST") or sh("docker", "context", "inspect", "--format", "{{.Endpoints.docker.Host}}", check=False)
+        if not endpoint.startswith(("unix://", "npipe://")):
+            where = endpoint or "an endpoint nuke can't read"
+            die(f"docker points at {where}, not this machine, so its containers can't be this tree's; switch to the local context first. Nothing touched")
         return True
     sockets = ["/var/run/docker.sock", os.path.expanduser("~/.docker/run/docker.sock")]
     if os.environ.get("DOCKER_HOST") or any(os.path.exists(p) for p in sockets):
         die("a docker daemon is here but the docker command isn't on PATH, so nuke can't see the tree's containers; put docker on PATH first. Nothing touched")
     return False
 
-def containers_mounting(tree):
+def labels_of(container):
+    return (container.get("Config") or {}).get("Labels") or {}
+
+def publishes(container, host_ports):
+    bindings = (container.get("NetworkSettings") or {}).get("Ports") or {}
+    return any(b.get("HostPort") in host_ports for binds in bindings.values() for b in binds or [])
+
+def containers_mounting(tree, docker_ports, projects):
     """Plain containers, compose or not, with a bind mount from inside the
-    tree, and the named volumes they use, which `docker rm -v` leaves behind."""
+    tree or a lock port published, and the named volumes they use, which
+    `docker rm -v` leaves behind. Compose containers are their project's;
+    one publishing a lock port from a project outside the tree means the
+    lock is stale, and that stops the run."""
     names, volumes = [], []
     if not docker_present():
+        if docker_ports: die(f"docker holds lock port(s) {', '.join(docker_ports)} but isn't on PATH; nothing touched")
         return names, [], []
     listing = subprocess.run(["docker", "ps", "-aq"], capture_output=True, text=True)
     if listing.returncode != 0:
@@ -175,11 +199,17 @@ def containers_mounting(tree):
         die(f"docker inspect failed; nuke can't tell which containers use this tree ({str(e)[:120]})")
     for c in containers:
         mounts = c.get("Mounts", [])
-        if c.get("Config", {}).get("Labels", {}).get("com.docker.compose.project"):
-            continue  # compose owns it; its project's down takes it, and a project outside the tree is not ours
-        if any(inside(m.get("Source", ""), tree) for m in mounts if m.get("Type") == "bind"):
+        project = labels_of(c).get("com.docker.compose.project")
+        on_port = publishes(c, docker_ports)
+        if project and on_port and project not in projects:
+            die(f"container {c['Name'].lstrip('/')} of compose project {project}, which isn't in this tree, publishes a lock port ({', '.join(docker_ports)}), so the lock looks stale; fix it first. Nothing touched")
+        if project:
+            continue  # compose owns it; its project's down takes it
+        if on_port or any(inside(m.get("Source", ""), tree) for m in mounts if m.get("Type") == "bind"):
             names.append(c["Name"].lstrip("/"))
             volumes += [m["Name"] for m in mounts if m.get("Type") == "volume" and m.get("Name")]
+    if docker_ports and not any(publishes(c, docker_ports) for c in containers):
+        die(f"docker holds lock port(s) {', '.join(docker_ports)} but no container publishes them, so the lock looks stale; fix it first. Nothing touched")
     ours = set(c["Id"] for c in containers if c["Name"].lstrip("/") in names)
     removable, kept = [], []
     for volume in sorted(set(volumes)):
@@ -208,6 +238,20 @@ def compose_projects_under(tree):
             names[row["Name"]] = files
     return names
 
+def project_volumes(project):
+    """After a project is down, its volumes: the ones compose named after the
+    project are its own; one with a name of its own (`name:` in the file) can
+    be another checkout's database too, so it stays, and so does any volume
+    a container still uses."""
+    own, shared = [], []
+    for volume in sh("docker", "volume", "ls", "-q", "--filter", f"label=com.docker.compose.project={project}", check=False).split():
+        in_use = sh("docker", "ps", "-aq", "--filter", f"volume={volume}", check=False).split()
+        if volume.startswith(project + "_") and not in_use:
+            own.append(volume)
+        else:
+            shared.append(volume)
+    return own, shared
+
 def must(*args, what, done=()):
     """Run a teardown step; if it fails, stop and say what already happened,
     so the report is true even when the run is cut short."""
@@ -232,9 +276,9 @@ def main():
 
     # Look at everything before touching anything, so a docker daemon that
     # isn't answering or a missing tool stops the run with nothing changed.
-    procs = processes_for(tree, lock_field(tree, "ports"))
+    procs, docker_ports = processes_for(tree, lock_field(tree, "ports"))
     projects = compose_projects_under(tree)
-    mounted, named_volumes, kept_volumes = containers_mounting(tree)
+    mounted, named_volumes, kept_volumes = containers_mounting(tree, docker_ports, projects)
 
     running = []
     if procs:
@@ -245,8 +289,15 @@ def main():
         running.append(f"{len(procs)} process(es) killed: " + "; ".join(f"{pid} {why}" for pid, why in sorted(procs.items())))
     for name, files in sorted(projects.items()):
         flags = [flag for f in files for flag in ("-f", f)]
-        must("docker", "compose", "-p", name, *flags, "down", "--volumes", "--remove-orphans", what=f"compose down of {name}", done=running)
-        running.append(f"compose down with volumes: {name}")
+        must("docker", "compose", "-p", name, *flags, "down", "--remove-orphans", what=f"compose down of {name}", done=running)
+        line = f"compose down: {name}"
+        own, shared = project_volumes(name)
+        if own:
+            must("docker", "volume", "rm", *own, what=f"removing volumes of {name}", done=running + [line])
+            line += ", volumes removed: " + ", ".join(own)
+        if shared:
+            line += "; kept, named for more than this project: " + ", ".join(shared)
+        running.append(line)
     if mounted:
         must("docker", "rm", "-f", "-v", *mounted, what="removing containers " + ", ".join(mounted), done=running)
         line = "containers removed: " + ", ".join(mounted)
