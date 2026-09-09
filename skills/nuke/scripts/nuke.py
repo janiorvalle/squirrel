@@ -121,18 +121,20 @@ def containers_mounting(tree):
     tree, and the named volumes they use, which `docker rm -v` leaves behind."""
     names, volumes = [], []
     if not shutil.which("docker"):
-        return names, volumes
+        return names, [], []
     listing = subprocess.run(["docker", "ps", "-aq"], capture_output=True, text=True)
     if listing.returncode != 0:
         die(f"docker is installed but not answering; nuke can't list containers ({listing.stderr.strip()[:120]})")
     ids = listing.stdout.split()
-    if not ids: return names, volumes
+    if not ids: return names, [], []
     try:
         containers = json.loads(sh("docker", "inspect", *ids))
     except (subprocess.CalledProcessError, json.JSONDecodeError) as e:
         die(f"docker inspect failed; nuke can't tell which containers use this tree ({str(e)[:120]})")
     for c in containers:
         mounts = c.get("Mounts", [])
+        if c.get("Config", {}).get("Labels", {}).get("com.docker.compose.project"):
+            continue  # compose owns it; its project's down takes it, and a project outside the tree is not ours
         if any(inside(m.get("Source", ""), tree) for m in mounts if m.get("Type") == "bind"):
             names.append(c["Name"].lstrip("/"))
             volumes += [m["Name"] for m in mounts if m.get("Type") == "volume" and m.get("Name")]
@@ -164,12 +166,13 @@ def compose_projects_under(tree):
             names[row["Name"]] = files
     return names
 
-def must(*args, what):
-    """Run a teardown step and stop the whole nuke if it fails, before any
-    git happens, so nothing is ever half removed."""
+def must(*args, what, done=()):
+    """Run a teardown step; if it fails, stop and say what already happened,
+    so the report is true even when the run is cut short."""
     result = subprocess.run(args, capture_output=True, text=True)
     if result.returncode != 0:
-        die(f"{what} failed, nothing else touched:\n  " + (result.stderr or result.stdout).strip()[:400])
+        so_far = ("; done before it: " + "; ".join(done)) if done else "; nothing was changed before it"
+        die(f"{what} failed{so_far}\n  " + (result.stderr or result.stdout).strip()[:400])
 
 def main():
     start = os.path.abspath(sys.argv[1]) if len(sys.argv) > 1 else os.getcwd()
@@ -194,33 +197,33 @@ def main():
         kill(list(procs))
         left = [pid for pid in procs if pid_alive(pid)]
         if left:
-            die(f"process(es) {left} survived SIGKILL; nothing else touched")
+            die(f"process(es) {left} survived SIGKILL; the others were killed, nothing else changed")
         running.append(f"{len(procs)} process(es) killed: " + "; ".join(f"{pid} {why}" for pid, why in sorted(procs.items())))
     for name, files in sorted(projects.items()):
         flags = [flag for f in files for flag in ("-f", f)]
-        must("docker", "compose", "-p", name, *flags, "down", "--volumes", "--remove-orphans", what=f"compose down of {name}")
+        must("docker", "compose", "-p", name, *flags, "down", "--volumes", "--remove-orphans", what=f"compose down of {name}", done=running)
     if projects:
         running.append("compose down with volumes: " + ", ".join(sorted(projects)))
     if mounted:
-        must("docker", "rm", "-f", "-v", *mounted, what="removing containers " + ", ".join(mounted))
+        must("docker", "rm", "-f", "-v", *mounted, what="removing containers " + ", ".join(mounted), done=running)
         line = "containers removed: " + ", ".join(mounted)
         if named_volumes:
-            must("docker", "volume", "rm", *named_volumes, what="removing volumes " + ", ".join(named_volumes))
+            must("docker", "volume", "rm", *named_volumes, what="removing volumes " + ", ".join(named_volumes), done=running + [line])
             line += ", with named volume(s) " + ", ".join(named_volumes)
         if kept_volumes:
             line += "; kept, not only this tree's: " + ", ".join(kept_volumes)
         running.append(line)
     stack_line = "; ".join(running) or "nothing running for this worktree"
 
+    os.chdir(main_root)
+    must("git", "worktree", "remove", "--force", tree, what="removing the worktree", done=running)
+
     lock_line = "no lock in the registry"
     lock = lock_for(tree)
     if lock:
         script = os.path.join(os.path.dirname(__file__), "..", "..", "worktree", "scripts", "worktree_lock.py")
-        must(sys.executable, script, "release", "--path", lock["path"], "--status", "released", what="releasing the lock")
+        must(sys.executable, script, "release", "--path", lock["path"], "--status", "released", what="releasing the lock", done=running + ["worktree removed"])
         lock_line = "released"
-
-    os.chdir(main_root)
-    sh("git", "worktree", "remove", "--force", tree)
     branch_line = f"{branch} kept, it's the main branch"
     if branch not in ("main", "master"):
         result = subprocess.run(["git", "branch", "-D", branch], capture_output=True, text=True)

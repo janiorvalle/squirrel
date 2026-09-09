@@ -29,7 +29,7 @@ Then it prints four lines, running, worktree, branch, lock, and you stop. No nex
 
 If the branch has commits the remote doesn't, nothing is touched and the script says which commits. Push them or delete them yourself, then run it again. That's the only case nuke can't undo.
 
-It also refuses to run on the main checkout, since that isn't a worktree, and it looks at everything before it touches anything, so a docker daemon that isn't answering, a missing tool, or a teardown step that fails stops the run with nothing changed.
+It also refuses to run on the main checkout, since that isn't a worktree. It looks at everything before it touches anything, so a docker daemon that isn't answering or a missing tool stops the run with nothing changed. Once teardown has begun, a step that fails stops the run there, and the message says what was already done, so the report is true even when the run is cut short.
 
 ## Never
 
