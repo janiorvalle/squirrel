@@ -18,7 +18,7 @@ python3 <this skill's folder>/scripts/nuke.py [worktree-path]
 
 In order:
 
-1. Everything running for this tree, found three ways so it doesn't matter whether the task used docker, a dev server, both, or neither: processes whose working directory is inside the tree or that listen on the ports the lock recorded, killed; compose projects whose files live inside the tree, `down` with volumes and orphans, never one a copied `.env` merely names; plain containers with a bind mount from inside the tree, removed with their volumes. Never anything from another tree, so the shared checkout's stack and servers are safe.
+1. Everything running for this tree, found three ways so it doesn't matter whether the task used docker, a dev server, both, or neither: processes whose working directory is inside the tree or that listen on the ports the lock recorded, killed; compose projects whose files live inside the tree, `down` with volumes and orphans, never one a copied `.env` merely names; plain containers with a bind mount from inside the tree, removed with their named volumes, except a volume another container still uses or a compose project owns, which is kept and named in the report. Never anything from another tree, so the shared checkout's stack, servers, and data are safe, and never the shell or agent that ran the command.
 2. The lock, released in the registry.
 3. The worktree, removed with force. Uncommitted files go with it; that's the point.
 4. The local branch, deleted. The remote branch and any PR stay, since deleting reviewable work is a different decision.
@@ -29,7 +29,7 @@ Then it prints four lines, running, worktree, branch, lock, and you stop. No nex
 
 If the branch has commits the remote doesn't, nothing is touched and the script says which commits. Push them or delete them yourself, then run it again. That's the only case nuke can't undo.
 
-It also refuses to run on the main checkout, since that isn't a worktree, and it stops before touching git if any teardown step fails or docker is installed but not answering, so nothing is ever half removed.
+It also refuses to run on the main checkout, since that isn't a worktree, and it looks at everything before it touches anything, so a docker daemon that isn't answering, a missing tool, or a teardown step that fails stops the run with nothing changed.
 
 ## Never
 

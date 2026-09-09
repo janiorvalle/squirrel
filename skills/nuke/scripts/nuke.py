@@ -55,6 +55,16 @@ def lock_field(tree, field):
     lock = lock_for(tree)
     return lock.get(field) if lock else None
 
+def ancestors():
+    """This process and every process above it: the shell, the agent, the
+    harness. Nuke never kills the chain that invoked it."""
+    chain, pid = set(), os.getpid()
+    while pid and pid not in chain:
+        chain.add(pid)
+        try: pid = int(sh("ps", "-o", "ppid=", "-p", str(pid), check=False).strip() or 0)
+        except ValueError: break
+    return chain
+
 def inside(path, tree):
     """True for the tree itself and anything under it, by real path."""
     path, tree = os.path.realpath(path), os.path.realpath(tree)
@@ -64,7 +74,7 @@ def processes_for(tree, ports):
     """Processes whose working directory is inside the tree, plus whatever is
     listening on the ports the lock recorded: dev servers, watchers, shells an
     agent left behind. Never this script's own process tree."""
-    mine = {os.getpid(), os.getppid()}
+    mine = ancestors()
     found = {}
     have_lsof = shutil.which("lsof") is not None
     if have_lsof:
@@ -126,13 +136,22 @@ def containers_mounting(tree):
         if any(inside(m.get("Source", ""), tree) for m in mounts if m.get("Type") == "bind"):
             names.append(c["Name"].lstrip("/"))
             volumes += [m["Name"] for m in mounts if m.get("Type") == "volume" and m.get("Name")]
-    return names, volumes
+    ours = set(c["Id"] for c in containers if c["Name"].lstrip("/") in names)
+    removable, kept = [], []
+    for volume in sorted(set(volumes)):
+        users = set(sh("docker", "ps", "-aq", "--filter", f"volume={volume}", check=False).split()) - ours
+        owner = sh("docker", "volume", "inspect", volume, "--format", "{{index .Labels \"com.docker.compose.project\"}}", check=False)
+        if users or owner:
+            kept.append(f"{volume} ({'used by ' + str(len(users)) + ' other container(s)' if users else 'owned by compose project ' + owner})")
+        else:
+            removable.append(volume)
+    return names, removable, kept
 
 def compose_projects_under(tree):
     """Compose projects whose config files live inside this worktree. Only
     that: a project name in the tree's .env proves nothing, since a copied
     .env can name the main checkout's project."""
-    names = set()
+    names = {}
     try:
         rows = json.loads(sh("docker", "compose", "ls", "--all", "--format", "json") or "[]")
     except FileNotFoundError:
@@ -140,9 +159,9 @@ def compose_projects_under(tree):
     except (subprocess.CalledProcessError, json.JSONDecodeError) as e:
         die(f"docker is installed but not answering, so nuke can't tell what runs for this tree; start it or stop it cleanly first ({str(e)[:120]})")
     for row in rows:
-        files = row.get("ConfigFiles", "")
-        if any(inside(f, tree) for f in files.split(",") if f):
-            names.add(row["Name"])
+        files = [f for f in row.get("ConfigFiles", "").split(",") if f]
+        if any(inside(f, tree) for f in files):
+            names[row["Name"]] = files
     return names
 
 def must(*args, what):
@@ -164,26 +183,32 @@ def main():
         die(f"{branch} has {len(ahead)} commit(s) the remote doesn't ({against}); push them or delete them yourself first:\n  " + "\n  ".join(ahead))
     dirty = len(sh("git", "status", "--porcelain", cwd=tree).splitlines())
 
-    running = []
+    # Look at everything before touching anything, so a docker daemon that
+    # isn't answering or a missing tool stops the run with nothing changed.
     procs = processes_for(tree, lock_field(tree, "ports"))
+    projects = compose_projects_under(tree)
+    mounted, named_volumes, kept_volumes = containers_mounting(tree)
+
+    running = []
     if procs:
         kill(list(procs))
         left = [pid for pid in procs if pid_alive(pid)]
         if left:
             die(f"process(es) {left} survived SIGKILL; nothing else touched")
         running.append(f"{len(procs)} process(es) killed: " + "; ".join(f"{pid} {why}" for pid, why in sorted(procs.items())))
-    projects = compose_projects_under(tree)
-    for name in sorted(projects):
-        must("docker", "compose", "-p", name, "down", "--volumes", "--remove-orphans", what=f"compose down of {name}")
+    for name, files in sorted(projects.items()):
+        flags = [flag for f in files for flag in ("-f", f)]
+        must("docker", "compose", "-p", name, *flags, "down", "--volumes", "--remove-orphans", what=f"compose down of {name}")
     if projects:
         running.append("compose down with volumes: " + ", ".join(sorted(projects)))
-    mounted, named_volumes = containers_mounting(tree)
     if mounted:
         must("docker", "rm", "-f", "-v", *mounted, what="removing containers " + ", ".join(mounted))
         line = "containers removed: " + ", ".join(mounted)
         if named_volumes:
             must("docker", "volume", "rm", *named_volumes, what="removing volumes " + ", ".join(named_volumes))
             line += ", with named volume(s) " + ", ".join(named_volumes)
+        if kept_volumes:
+            line += "; kept, not only this tree's: " + ", ".join(kept_volumes)
         running.append(line)
     stack_line = "; ".join(running) or "nothing running for this worktree"
 
