@@ -91,7 +91,7 @@ Out of scope: The sidebar's thread list.
 
 ## Evidence
 
-What counts as evidence is in `prove-it`. It goes on the ticket, as comments with links and attachments in whatever form the backend has. GitHub comments take images, video, PDFs, and zips but not HTML, so the walkthrough is a gist in a public repo, `gh gist create walkthrough.html`, linked from the comment, and a zip on the comment in a private repo, never a gist. Anyone with the URL can read a gist; the comment is covered by the repo's access rules. Nothing binary enters git, and the tasks folder is git too.
+What counts as evidence is in `prove-it`. It goes on the ticket, as comments with links and attachments in whatever form the backend has. GitHub comments take images, video, PDFs, and zips, so anything else goes on the comment zipped. Nothing binary enters git, and the tasks folder is git too.
 
 ## Markdown tasks in the repo
 
@@ -109,7 +109,7 @@ Problem: ...
 
 - File: write it under `tasks/open/`, lint it, and land it on the default branch through a small PR with only that file, on a branch named `file-<task>`. If you're about to do the task yourself, file and claim in one go.
 - Claim: `git fetch`, then look for a remote branch named `<task>`, the task file's name. One there means the task is taken. A claim here is a commit, so the branch and worktree from `worktree` come first, the one place the mode's order flips; creating them touches no project file. Move the file to `tasks/doing/` with your owner and files in the frontmatter, and push that first commit before any project file changes, so the branch is what the next agent finds.
-- Turn in: the PR link in the frontmatter and the file moved to `tasks/done/`, in the same PR as the work. The PR is the turn-in comment, so the evidence goes on it as comment attachments, the walkthrough the way Evidence says.
+- Turn in: the PR link in the frontmatter and the file moved to `tasks/done/`, in the same PR as the work. The PR is the turn-in comment, so the evidence goes on it as comment attachments.
 - Complete: the merge, since the PR moves the file.
 
 ## GitHub Issues
@@ -118,7 +118,7 @@ Problem: ...
 
 - File: `gh issue create --title "<outcome>" --body-file ticket.md`, after the lint.
 - Claim: `gh issue view <n> --json assignees` first; an assignee there means it's taken. Then `gh issue edit <n> --add-assignee @me`, `gh issue comment <n> --body "Claimed. Files: src/thread.ts, src/thread.test.ts"`, and the same view again. GitHub allows several assignees, so a second name means the earlier claim comment wins and the other one runs `gh issue edit <n> --remove-assignee @me`.
-- Turn in: `gh issue comment <n> --body-file turnin.md`, the ticket shape plus the PR link and the evidence links. Screenshots and recordings drop into that comment through the browser, since gh can't upload attachments; the walkthrough goes the way Evidence says.
+- Turn in: `gh issue comment <n> --body-file turnin.md`, the ticket shape plus the PR link and the evidence links. Screenshots and recordings drop into that comment through the browser, since gh can't upload attachments.
 - Complete: `gh issue close <n>` after the merge, by the human.
 
 ## Linear
@@ -127,7 +127,7 @@ Problem: ...
 
 - File: create the issue in that team with the ticket shape as the description, after the lint.
 - Claim: read the issue first; an assignee there means it's taken. Post the claim comment with the files, assign yourself, move it to In Progress, and read the comments back. The earliest claim comment wins, since comments can't be reordered; if it isn't yours, drop the assignment and pick another.
-- Turn in: a comment with the PR link and the evidence attached, screenshots, recordings, and the walkthrough, then the status to In Review, or whatever the team calls the state between building and merging.
+- Turn in: a comment with the PR link and the evidence attached, screenshots and recordings, then the status to In Review, or whatever the team calls the state between building and merging.
 - Complete: Done after the merge, by the human.
 
 The PR title carries the issue key, `fix(web): SR-123 new threads respect the worktree default`, so Linear links the PR to the issue.
@@ -139,4 +139,4 @@ The PR title carries the issue key, `fix(web): SR-123 new threads respect the wo
 - File a ticket the human hasn't said yes to, as shown. The yes is theirs, one ticket at a time; after it, you run the filing command. What you would have filed goes in your report as one sentence, and they say which ones to show them.
 - Put a file list or design notes in the ticket body. Files go in the claim comment, design notes in the PR.
 - Complete a ticket you built.
-- Commit a screenshot, a recording, or a walkthrough.
+- Commit a screenshot or a recording.

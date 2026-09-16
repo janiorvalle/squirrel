@@ -154,7 +154,7 @@ func pinFrom(command string) string {
 }
 
 // ParseVersion picks the version out of what a tool's Version command
-// printed, so "bgr 1.7.0" and "tokenomnom version 0.6.6" both work, and
+// printed, so "roast 1.7.0" and "tokenomnom version 0.6.6" both work, and
 // returns it with the leading v that semver expects. Output with no version
 // in it gives "".
 func ParseVersion(output string) string {

@@ -54,20 +54,6 @@ Secret scanner, run by roast over the diff before review. On macOS and Linux its
 - Install: `script=$(mktemp) && curl -fsSL -o "$script" https://raw.githubusercontent.com/trufflesecurity/trufflehog/main/scripts/install.sh && sh "$script" -b ~/.local/bin`
 - Install (windows): `Get-Content -Raw (Join-Path $env:USERPROFILE '.squirrel\scripts\install-trufflehog.ps1') | iex`
 
-## bgr
-
-Turns a PR, commit, or diff into a review walkthrough. Its HTML goes to the tracker as evidence once the diff is final.
-
-- Repo: https://github.com/janiorvalle/better-git-review
-- Check: `command -v bgr`
-- Check (windows): `Get-Command bgr`
-- Version: `bgr --version`
-- Install: `script=$(mktemp) && curl -fsSL -o "$script" https://raw.githubusercontent.com/janiorvalle/better-git-review/main/install.sh && sh "$script"`
-- Install (windows): `irm https://raw.githubusercontent.com/janiorvalle/better-git-review/main/install.ps1 | iex`
-- Skill install: `bgr install-skill`
-- Skill folder: `bgr`
-- From an agent, use `--format json --out <path>`, pass `--yes` on anything that might stage, and never run the interactive picker or `bgr configure`.
-
 ## tokenomnom
 
 Token usage and spend across your coding agents, plus transcript search. Not part of the flow, but the tools group ships it.
