@@ -85,7 +85,7 @@ In a planned rewrite, don't keep every step working with throwaway compatibility
 
 ## Sequence the gates: fix first, judge last
 
-Anything that can change the code runs before anything that judges it: format and lint with autofix, typecheck, the fast tests, the review gate looped until it says well done, then the full suite once. The review gate is a different model than the one that wrote the change, and it's required: if it isn't installed or fails to run, stop and say so. A missing gate is a blocker, not an inconvenience. If the full suite fails at the end, fix it, rerun the fast tier, and review only the fix. `verify-each-step` has the order, `land-pr` runs it.
+Anything that can change the code runs before anything that judges it: format and lint with autofix, typecheck, the fast tests, the review gate looped until it says well done, then the full suite once. The review gate is required: if it isn't installed or fails to run, stop and say so. A missing gate is a blocker, not an inconvenience. If the full suite fails at the end, fix it, rerun the fast tier, and review only the fix. `verify-each-step` has the order, `land-pr` runs it.
 
 ## Guard your context
 
