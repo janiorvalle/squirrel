@@ -89,8 +89,8 @@ Drives a real browser from the command line, so an agent uses a web UI the way a
 - Check: `command -v agent-browser`
 - Check (windows): `Get-Command agent-browser`
 - Version: `agent-browser --version`
-- Install: `npm install -g agent-browser@0.36.0 && agent-browser install`
-- Install (windows): `npm install -g agent-browser@0.36.0; agent-browser install`
+- Install: `npm install -g agent-browser@0.37.1 && agent-browser install`
+- Install (windows): `npm install -g agent-browser@0.37.1; agent-browser install`
 - Its skill ships in this repo under `skills/agent-browser`, copied from upstream at the commit pinned in `vendor.json` because squirrel doesn't control the tool, and `squirrel setup` installs it like every other skill. It's a stub that runs `agent-browser skills get core`, so the instructions agents follow ship inside the CLI, which is why the install line pins the CLI version and `scripts/tool-bump.py` moves it through a PR.
 - The stub's `npm i -g agent-browser` is upstream text and installs whatever is newest, not the pin. Use the `Install` line above or `squirrel setup --install-tools`. Setup reports any other version as outdated or ahead.
 
