@@ -106,7 +106,7 @@ func TestParseVersionFindsTheVersionInWhatToolsPrint(t *testing.T) {
 	for output, want := range map[string]string{
 		"quest 0.24.0\n":                 "v0.24.0",
 		"0.2.5":                          "v0.2.5",
-		"bgr 1.7.0":                      "v1.7.0",
+		"roast 1.7.0":                    "v1.7.0",
 		"tokenomnom version 0.6.6":       "v0.6.6",
 		"agent-browser 0.27.0":           "v0.27.0",
 		"v1.2.3-rc.1":                    "v1.2.3-rc.1",

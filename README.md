@@ -48,10 +48,9 @@ Restart your harness so the skills load. Then start any multi-step task with `/s
 
 ## Tools
 
-The flow leans on three tools. `squirrel setup` offers each one that's missing or behind its latest release, and an update runs through whoever installed the binary: `brew upgrade` for a Homebrew one, the `tools.md` line for one in `~/.local/bin`, the pinned npm line for an npm one. A binary anywhere else is shown with its path and left to you.
+The flow leans on two tools. `squirrel setup` offers each one that's missing or behind its latest release, and an update runs through whoever installed the binary: `brew upgrade` for a Homebrew one, the `tools.md` line for one in `~/.local/bin`, the pinned npm line for an npm one. A binary anywhere else is shown with its path and left to you.
 
 - **roast**, the independent review gate. A different model reviews the diff until it says well done. It needs TruffleHog for its secret scan, and setup installs that too.
-- **bgr**, the review walkthrough. Its HTML is the last piece of evidence before turn-in.
 - **agent-browser**, a real browser from the command line, for using what you built like a person would.
 
 The work tracker isn't a tool setup installs. Each repo names its own on a `Tracker:` line in its instructions file, and the `tracker` skill has the contract, the ticket shape, and the commands for markdown tasks, GitHub Issues, and Linear.
@@ -65,7 +64,7 @@ Each tool ships its own skill and installs it. `tools.md` has the check, version
 - `skills/*/` with `kind: principle` in the frontmatter are the principles. One rule each.
 - The rest are workflows: `how`, `why`, `architect`, `arena`, `swarm`, `land-pr`, `worktree`, and so on.
 - `tools.md` names the tools the flow expects and how to get them. A `(windows)` line runs there in PowerShell, the plain line is POSIX shell for macOS and Linux. The agent-browser line pins the CLI version because its skill text ships inside the CLI, and `scripts/tool-bump.py` moves that pin through a weekly PR.
-- `vendor.json` pins the third-party skills in `skills/`, the ones whose tool squirrel doesn't control, so their text changes through a reviewed PR. `scripts/vendor-bump.py` copies each in at its pin, and a weekly workflow opens a bump PR when upstream moves. Our own tools, roast, bgr, and tokenomnom, ship their skill with the binary instead.
+- `vendor.json` pins the third-party skills in `skills/`, the ones whose tool squirrel doesn't control, so their text changes through a reviewed PR. `scripts/vendor-bump.py` copies each in at its pin, and a weekly workflow opens a bump PR when upstream moves. Our own tools, roast and tokenomnom, ship their skill with the binary instead.
 - `cmd/squirrel` and `internal/` are the binary, with the skills, the letter, `tools.md`, and `vendor.json` embedded at build time, so setup runs from anywhere.
 - This repo tracks its own work in GitHub Issues, named by the `Tracker:` line at the top of the letter. Setup leaves that line out of what it installs.
 - `decisions.md` records the choices made while building this, so nobody relitigates them.

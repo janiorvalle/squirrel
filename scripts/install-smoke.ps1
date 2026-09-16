@@ -154,13 +154,13 @@ try {
   $report = & $installed setup --harness claude,codex --yes --install-tools | Out-String
   Write-Output $report
   Assert ($LASTEXITCODE -eq 0) "squirrel setup --install-tools exited with $LASTEXITCODE"
-  foreach ($tool in @("roast", "TruffleHog", "bgr", "tokenomnom")) {
+  foreach ($tool in @("roast", "TruffleHog", "tokenomnom")) {
     Assert ($report -match "(?m)^\s+ok $tool\b") "setup did not report $tool ok after installing it"
   }
-  foreach ($executable in @("roast\roast.exe", "trufflehog\trufflehog.exe", "bgr\bgr.exe", "bgr\better-git-review.exe", "tokenomnom\tokenomnom.exe", "tokenomnom\nomnom.exe")) {
+  foreach ($executable in @("roast\roast.exe", "trufflehog\trufflehog.exe", "tokenomnom\tokenomnom.exe", "tokenomnom\nomnom.exe")) {
     Assert (Test-Path (Join-Path $programs $executable)) "$executable is not where its installer puts it"
   }
-  foreach ($skill in @("roast", "bgr", "tokenomnom")) {
+  foreach ($skill in @("roast", "tokenomnom")) {
     Assert (Test-Path (Join-Path $profileHome ".claude\skills\$skill\SKILL.md")) "setup did not install the $skill skill after installing the tool"
   }
   $writtenTruffleInstaller = Join-Path $profileHome ".squirrel\scripts\install-trufflehog.ps1"

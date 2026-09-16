@@ -250,3 +250,9 @@ What gh said about each origin it could see is saved in the config as `origins`,
 Written 2026-09-05, for issue 49.
 
 The scan from issue 50 still left the terminal blank for seconds, a minute on a slow disk or network, so it looked hung. Now `Options.Progress` takes each step of a wait as it moves, and the terminal draws one line in place, "reading repos 37 of 143, asking gh about origins 12 of 120", once the wait has run a second, so a three-repo scan flickers nothing. The flag path passes no callback and prints nothing new. The skills repo pull and the tools step got the same line, since either runs over a second on a slow network. Whatever comes next takes the line off: a screen, or any line setup prints, since setup prints through the writer that holds it. A pty that reports no size gets 80 by 24, where before the list's filter input panicked.
+
+## bgr leaves the stack
+
+Written 2026-09-16, for issue 68.
+
+Every task ended with a bgr walkthrough because step 8 of the squirrel flow named it, and the Never lists in squirrel and land-pr put it beside roast under "skip quietly". Agents read that as one more gate and ran it on every PR. The human decided it goes. bgr is out of the flow, the proof list, the tracker's evidence notes, tools.md, the README, the Windows install smoke, and the setup tests' fixture. Roast is the only review gate. The gist rule in the tracker skill went with it, since the walkthrough was the only HTML evidence; anything a GitHub comment can't take goes on it zipped. The dated entries above that name bgr describe what was true when they were written and stay as they are.

@@ -52,8 +52,6 @@ Write it in the ticket shape from `tracker`: problem, fix, done when. Put the ta
 
 Don't say it works, show it. Anything a user can see gets screenshots, including empty, loading, and error states. Anything that changes state gets receipts, the request and the stored result. Bug fixes show the broken state first, then the same capture fixed. Web flows get a keyboard-only pass.
 
-Once the PR is open and the diff is final, run `bgr` on it and keep the HTML walkthrough with the rest of the evidence. If the diff moves after that, regenerate it.
-
 All of it goes on the ticket at turn-in, the way `tracker` says for the repo's backend, never into git.
 
 ## After the PR is open
@@ -69,4 +67,4 @@ Turn the task in with the PR open, evidence attached, and the branch left standi
 - Merge your own PR unless the human explicitly said to.
 - Change the diff after review without rerunning the fast tier and reviewing the delta.
 - Open a PR with failing or unread checks and call it done.
-- Skip roast or bgr quietly. If one isn't installed, say so and point at tools.md.
+- Skip roast quietly. If it isn't installed, say so and point at tools.md.

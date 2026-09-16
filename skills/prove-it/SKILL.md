@@ -33,7 +33,6 @@ For web UIs, walk the flow a second time keyboard-only. Tab reaches every contro
 - **Anything that changes state.** Receipts, not assurances. The actual request or mutation you ran, and the stored record afterward with its fields. State before, the action, state after. Same for jobs, webhooks, and migrations.
 - **Bugs.** Capture the broken state before touching code. Fix. Capture the same thing again. Every fix ships with a before and an after. If you can't reproduce it, stop and say so.
 - **Anything a still can't prove.** Animations, drag, keyboard traversal, multi-step journeys. A `.webm`, recorded by the test runner as a side effect of running, not by hand. A GIF only when the tooling can't emit webm. If recording becomes more work than the change, say so and attach stills.
-- **The walkthrough.** Once the PR is open and the diff is final, the review walkthrough HTML goes in with the rest. If the diff moves after that, regenerate it.
 
 Every file carries its real extension. `.png`, `.webm`, `.json`, `.html`. That's how the viewer knows what opens it.
 

@@ -17,7 +17,7 @@ func ownedFixture() fstest.MapFS {
 	files["tools.md"] = &fstest.MapFile{Data: []byte("# Tools\n\n" +
 		"## git\n\n- Check: `check-git`\n\n" +
 		"## TruffleHog\n\n- Repo: https://github.com/x/trufflehog\n- Check: `command -v trufflehog`\n- Check (windows): `Get-Command trufflehog`\n- Version: `trufflehog --version`\n- Install: `curl trufflehog | sh`\n\n" +
-		"## bgr\n\n- Repo: https://github.com/x/bgr\n- Check: `command -v bgr`\n- Check (windows): `Get-Command bgr`\n- Version: `bgr --version`\n- Install: `curl bgr | sh`\n- Skill install: `bgr install-skill`\n- Skill folder: `bgr`\n\n" +
+		"## lint\n\n- Repo: https://github.com/x/lint\n- Check: `command -v lint`\n- Check (windows): `Get-Command lint`\n- Version: `lint --version`\n- Install: `curl lint | sh`\n- Skill install: `lint install-skill`\n- Skill folder: `lint`\n\n" +
 		"## browser\n\n- Repo: https://github.com/x/browser\n- Check: `command -v browser`\n- Check (windows): `Get-Command browser`\n- Version: `browser --version`\n- Install: `" + pinnedInstall + "`\n")}
 	return files
 }
@@ -42,7 +42,7 @@ const userPath = "/usr/bin:/bin"
 var onUserPath = "PATH=" + quote("darwin", userPath) + "; "
 
 // owned is a machine with every tool outdated and each binary where its
-// owner put it: TruffleHog linked from Homebrew's bin into its Cellar, bgr
+// owner put it: TruffleHog linked from Homebrew's bin into its Cellar, lint
 // in ~/.local/bin, browser linked from node's bin into its global
 // node_modules. brew and node live under home so the links are real.
 func owned(t *testing.T, home string) (*fakeShell, Options) {
@@ -50,20 +50,20 @@ func owned(t *testing.T, home string) (*fakeShell, Options) {
 	brew, node := filepath.Join(home, "brew"), filepath.Join(home, "node")
 	linked(t, filepath.Join(brew, "bin", "trufflehog"), filepath.Join(brew, "Cellar", "trufflehog", "3.97.0", "bin", "trufflehog"))
 	linked(t, filepath.Join(node, "bin", "browser"), filepath.Join(node, "lib", "node_modules", "browser", "bin", "browser"))
-	write(t, filepath.Join(home, ".local", "bin", "bgr"), "#!/bin/sh\n")
+	write(t, filepath.Join(home, ".local", "bin", "lint"), "#!/bin/sh\n")
 	shell := &fakeShell{
 		present: map[string]bool{"check-git": true},
 		versions: map[string]string{
 			onUserPath + "trufflehog --version":  "trufflehog 3.97.0",
-			onUserPath + "bgr --version":         "bgr 1.6.0",
+			onUserPath + "lint --version":        "lint 1.6.0",
 			onUserPath + "browser --version":     "browser 0.35.0",
 			"brew --prefix":                      brew,
 			"npm prefix -g":                      node,
 			onUserPath + "command -v trufflehog": filepath.Join(brew, "bin", "trufflehog"),
-			onUserPath + "command -v bgr":        filepath.Join(home, ".local", "bin", "bgr"),
+			onUserPath + "command -v lint":       filepath.Join(home, ".local", "bin", "lint"),
 			onUserPath + "command -v browser":    filepath.Join(node, "bin", "browser"),
 		},
-		latest: map[string]string{"TruffleHog": "v3.97.4", "bgr": "v1.7.0"},
+		latest: map[string]string{"TruffleHog": "v3.97.4", "lint": "v1.7.0"},
 	}
 	opts, _ := options(t, home, shell, "")
 	opts.Files = ownedFixture()
@@ -103,14 +103,14 @@ func TestUpdateGoesThroughWhoeverOwnsTheBinary(t *testing.T) {
 	statuses := resolved(t, opts)
 	for title, want := range map[string]string{
 		"TruffleHog": "brew upgrade trufflehog",
-		"bgr":        "curl bgr | sh",
+		"lint":       "curl lint | sh",
 		"browser":    pinnedInstall,
 	} {
 		if got := statuses[title].line(); got != want {
 			t.Fatalf("%s update = %q, want %q (owner %d at %q)", title, got, want, statuses[title].owner, statuses[title].path)
 		}
 	}
-	if statuses["TruffleHog"].owner != byHomebrew || statuses["bgr"].owner != byInstaller || statuses["browser"].owner != byNpm {
+	if statuses["TruffleHog"].owner != byHomebrew || statuses["lint"].owner != byInstaller || statuses["browser"].owner != byNpm {
 		t.Fatalf("owners: %+v", statuses)
 	}
 	if got := toolState(statuses["TruffleHog"]); got != "outdated TruffleHog 3.97.0, latest 3.97.4. update: brew upgrade trufflehog" {
@@ -126,10 +126,10 @@ func TestTheFormulaIsReadOffTheCellarPath(t *testing.T) {
 	home := homeWithClaude(t)
 	shell, opts := owned(t, home)
 	brew := filepath.Join(home, "brew")
-	linked(t, filepath.Join(brew, "bin", "bgr"), filepath.Join(brew, "Cellar", "better-git-review", "1.6.0", "bin", "bgr"))
-	shell.versions[onUserPath+"command -v bgr"] = filepath.Join(brew, "bin", "bgr")
-	if got := resolved(t, opts)["bgr"].line(); got != "brew upgrade better-git-review" {
-		t.Fatalf("bgr update = %q", got)
+	linked(t, filepath.Join(brew, "bin", "lint"), filepath.Join(brew, "Cellar", "better-git-review", "1.6.0", "bin", "lint"))
+	shell.versions[onUserPath+"command -v lint"] = filepath.Join(brew, "bin", "lint")
+	if got := resolved(t, opts)["lint"].line(); got != "brew upgrade better-git-review" {
+		t.Fatalf("lint update = %q", got)
 	}
 }
 
@@ -142,7 +142,7 @@ func TestAFileInHomebrewsBinThatIsNotBrewsLinkIsSomebodyElses(t *testing.T) {
 		t.Fatal(err)
 	}
 	write(t, stray, "#!/bin/sh\n")
-	shell.versions[onUserPath+"bgr --version"] = "bgr 1.7.0"
+	shell.versions[onUserPath+"lint --version"] = "lint 1.7.0"
 	shell.versions[onUserPath+"browser --version"] = "browser 0.36.0"
 	opts.UpdateTools = true
 	opts.Yes = true
@@ -179,13 +179,13 @@ func TestALinkInTheInstallersFolderThatLeadsElsewhereIsSomebodyElses(t *testing.
 	skipOnWindows(t)
 	home := homeWithClaude(t)
 	shell, opts := owned(t, home)
-	link := filepath.Join(home, ".local", "bin", "bgr")
+	link := filepath.Join(home, ".local", "bin", "lint")
 	if err := os.Remove(link); err != nil {
 		t.Fatal(err)
 	}
-	linked(t, link, filepath.Join(home, ".asdf", "installs", "bgr", "1.6.0", "bin", "bgr"))
-	shell.versions[onUserPath+"command -v bgr"] = link
-	status := resolved(t, opts)["bgr"]
+	linked(t, link, filepath.Join(home, ".asdf", "installs", "lint", "1.6.0", "bin", "lint"))
+	shell.versions[onUserPath+"command -v lint"] = link
+	status := resolved(t, opts)["lint"]
 	if status.actionable() || status.owner != bySomethingElse {
 		t.Fatalf("status = %+v", status)
 	}
@@ -205,8 +205,8 @@ func TestAFileInsideALinkedInstallersFolderIsTheInstallers(t *testing.T) {
 	if err := os.Symlink(elsewhere, filepath.Join(home, ".local", "bin")); err != nil {
 		t.Fatal(err)
 	}
-	shell.versions[onUserPath+"command -v bgr"] = filepath.Join(home, ".local", "bin", "bgr")
-	if status := resolved(t, opts)["bgr"]; status.owner != byInstaller || status.line() != "curl bgr | sh" {
+	shell.versions[onUserPath+"command -v lint"] = filepath.Join(home, ".local", "bin", "lint")
+	if status := resolved(t, opts)["lint"]; status.owner != byInstaller || status.line() != "curl lint | sh" {
 		t.Fatalf("status = %+v", status)
 	}
 }
@@ -234,22 +234,22 @@ func TestTheSkillInstallRunsTheBinaryThePersonsPathRunsAndItsFailureIsTheFailure
 	shell, opts := owned(t, home)
 	shell.versions[onUserPath+"trufflehog --version"] = "trufflehog 3.97.4"
 	shell.versions[onUserPath+"browser --version"] = "browser 0.36.0"
-	shell.versions[onUserPath+"bgr --version"] = "bgr 1.7.0"
+	shell.versions[onUserPath+"lint --version"] = "lint 1.7.0"
 	opts.Yes = true
 	if err := Run(context.Background(), opts); err != nil {
 		t.Fatal(err)
 	}
 	commands := strings.Join(shell.commands, ";")
-	if !strings.Contains(commands, onUserPath+"bgr install-skill") || strings.Contains(commands, ";bgr install-skill") {
+	if !strings.Contains(commands, onUserPath+"lint install-skill") || strings.Contains(commands, ";lint install-skill") {
 		t.Fatalf("the skill install did not run on the person's PATH: %v", shell.commands)
 	}
-	shell.failing = map[string]bool{onUserPath + "bgr install-skill": true}
+	shell.failing = map[string]bool{onUserPath + "lint install-skill": true}
 	shell.commands = nil
 	err := Run(context.Background(), opts)
-	if err == nil || !strings.Contains(err.Error(), "bgr: `bgr install-skill` failed") {
+	if err == nil || !strings.Contains(err.Error(), "lint: `lint install-skill` failed") {
 		t.Fatalf("err = %v, want the failure of the binary the person runs", err)
 	}
-	if strings.Contains(strings.Join(shell.commands, ";"), ";bgr install-skill") {
+	if strings.Contains(strings.Join(shell.commands, ";"), ";lint install-skill") {
 		t.Fatalf("a failure fell through to the shell's PATH: %v", shell.commands)
 	}
 }
@@ -260,16 +260,16 @@ func TestAToolOffThePersonsPathRunsItsLinesOnTheShells(t *testing.T) {
 	shell, opts := owned(t, home)
 	shell.versions[onUserPath+"trufflehog --version"] = "trufflehog 3.97.4"
 	shell.versions[onUserPath+"browser --version"] = "browser 0.36.0"
-	delete(shell.versions, onUserPath+"command -v bgr")
-	delete(shell.versions, onUserPath+"bgr --version")
-	shell.versions["command -v bgr"] = filepath.Join(home, ".local", "bin", "bgr")
-	shell.versions["bgr --version"] = "bgr 1.7.0"
+	delete(shell.versions, onUserPath+"command -v lint")
+	delete(shell.versions, onUserPath+"lint --version")
+	shell.versions["command -v lint"] = filepath.Join(home, ".local", "bin", "lint")
+	shell.versions["lint --version"] = "lint 1.7.0"
 	opts.Yes = true
 	if err := Run(context.Background(), opts); err != nil {
 		t.Fatal(err)
 	}
 	commands := strings.Join(shell.commands, ";")
-	if !strings.Contains(commands, ";bgr install-skill") || strings.Contains(commands, onUserPath+"bgr install-skill") {
+	if !strings.Contains(commands, ";lint install-skill") || strings.Contains(commands, onUserPath+"lint install-skill") {
 		t.Fatalf("a just-installed tool's skill install did not run on the shell's PATH: %v", shell.commands)
 	}
 }
@@ -278,11 +278,11 @@ func TestTheShellsPathIsTheFallbackWhenThePersonsFindsNothing(t *testing.T) {
 	skipOnWindows(t)
 	home := homeWithClaude(t)
 	shell, opts := owned(t, home)
-	delete(shell.versions, onUserPath+"command -v bgr")
-	delete(shell.versions, onUserPath+"bgr --version")
-	shell.versions["command -v bgr"] = filepath.Join(home, ".local", "bin", "bgr")
-	shell.versions["bgr --version"] = "bgr 1.6.0"
-	if status := resolved(t, opts)["bgr"]; status.owner != byInstaller || status.line() != "curl bgr | sh" || status.installed != "v1.6.0" {
+	delete(shell.versions, onUserPath+"command -v lint")
+	delete(shell.versions, onUserPath+"lint --version")
+	shell.versions["command -v lint"] = filepath.Join(home, ".local", "bin", "lint")
+	shell.versions["lint --version"] = "lint 1.6.0"
+	if status := resolved(t, opts)["lint"]; status.owner != byInstaller || status.line() != "curl lint | sh" || status.installed != "v1.6.0" {
 		t.Fatalf("status = %+v", status)
 	}
 }
@@ -291,7 +291,7 @@ func TestPrefixesAreReadOnceAndOnlyForOutdatedTools(t *testing.T) {
 	skipOnWindows(t)
 	home := homeWithClaude(t)
 	shell, opts := owned(t, home)
-	shell.versions[onUserPath+"bgr --version"] = "bgr 1.7.0"
+	shell.versions[onUserPath+"lint --version"] = "lint 1.7.0"
 	resolved(t, opts)
 	commands := strings.Join(shell.commands, ";")
 	if strings.Count(commands, "brew --prefix") != 1 || strings.Count(commands, "npm prefix -g") != 1 || strings.Count(commands, "command -v trufflehog") != 2 || !strings.Contains(commands, onUserPath+"command -v trufflehog") {
@@ -307,7 +307,7 @@ func TestAnUpdateRunsEveryCommandOfItsLineWhereThePersonsPathFoundTheBinary(t *t
 	opts.Yes = true
 	_ = Run(context.Background(), opts)
 	commands := strings.Join(shell.commands, "\n")
-	for _, want := range []string{onUserPath + "brew upgrade trufflehog", onUserPath + "curl bgr | sh", onUserPath + pinnedInstall} {
+	for _, want := range []string{onUserPath + "brew upgrade trufflehog", onUserPath + "curl lint | sh", onUserPath + pinnedInstall} {
 		if !strings.Contains(commands, "\n"+want+"\n") {
 			t.Fatalf("update did not run on the person's PATH, want %q in:\n%s", want, commands)
 		}

@@ -211,7 +211,7 @@ func quote(operatingSystem, path string) string {
 }
 
 // buildCatalog lines the sources up, squirrel first. Two kinds of folder are
-// left out of every repo. One a tool installs itself, roast or bgr say: a
+// left out of every repo. One a tool installs itself, roast or tokenomnom say: a
 // repo built from a whole skills folder carries those along, and the tool's
 // own install keeps them matched to its binary. And one whose name isn't
 // lowercase: on the case-insensitive disks macOS and Windows ship with,
