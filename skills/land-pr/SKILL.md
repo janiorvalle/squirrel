@@ -20,7 +20,7 @@ Cheap steps that change the code first, the expensive judgment last. Review read
 1. Format and lint, autofix. Always first.
 2. Typecheck or compile.
 3. Fast tests. Seconds to a couple of minutes.
-4. `roast`, looped until it says well done. Rerun steps one to three before each round. Follow the roast skill for the scope fence.
+4. `roast`, looped until it says well done. Run it bare, never with `--max-priority`; the threshold is the human's and the default is theirs. Rerun steps one to three before each round. Follow the roast skill for the scope fence.
 5. The full suite, once, against the final review-clean diff.
 
 If the full suite fails at the end, don't restart the review loop. Fix it, rerun the fast tier, review only the fix.
