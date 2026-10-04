@@ -1,0 +1,454 @@
+<!--
+  The mockup feedback layer. Paste this whole file, unchanged, just before </body> in every mockup.
+  It reads three things from the mockup: the bar is id="flow-bar", each tab button carries
+  data-tab="<number>", and each state carries data-state="<number>". It adds its own Feedback
+  switch to the bar. Nothing here is fetched or loaded from anywhere else.
+-->
+<style>
+#flow-bar #mf-switch { all: revert; box-sizing: border-box; margin-left: auto; display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border: 1px solid #5a5a5a; border-radius: 6px; background: transparent; color: #e6e6e6; font: 600 13px/1.3 system-ui, -apple-system, "Segoe UI", sans-serif; cursor: pointer; }
+#flow-bar #mf-switch[aria-pressed="true"] { background: #d9480f; border-color: #d9480f; color: #fff; }
+#flow-bar #mf-switch:focus-visible { outline: 2px solid #ffb38a; outline-offset: 2px; }
+#mf-layer, #mf-frame, #mf-panel { all: initial; font: 13px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif; color: #1f2024; }
+#mf-frame *, #mf-panel * { all: revert; box-sizing: border-box; font: inherit; color: inherit; }
+#mf-layer[hidden], #mf-frame[hidden], #mf-panel[hidden], #mf-frame [hidden], #mf-panel [hidden] { display: none !important; }
+#mf-layer { position: fixed; left: 0; right: 0; bottom: 0; z-index: 2147483000; cursor: crosshair; user-select: none; touch-action: none; }
+#mf-frame { position: absolute; left: 0; top: 0; width: 0; height: 0; z-index: 2147483001; pointer-events: none; user-select: none; }
+#mf-frame .mf-mark { position: absolute; border: 2px solid #d9480f; background: rgba(217, 72, 15, 0.08); border-radius: 3px; pointer-events: none; }
+#mf-frame .mf-mark.mf-active { box-shadow: 0 0 0 3px rgba(217, 72, 15, 0.35); }
+#mf-frame .mf-mark.mf-ghost { border-style: dashed; }
+#mf-frame .mf-num { position: absolute; left: -2px; top: -22px; min-width: 20px; padding: 0 6px; border: 0; border-radius: 4px; background: #d9480f; color: #fff; font-weight: 600; font-size: 12px; line-height: 20px; text-align: center; cursor: pointer; pointer-events: auto; }
+#mf-frame .mf-num:focus-visible, #mf-panel button:focus-visible, #mf-frame button:focus-visible { outline: 2px solid #2f5d8a; outline-offset: 2px; }
+#mf-frame #mf-editor { position: absolute; width: 300px; padding: 10px; background: #fff; border: 1px solid #d0cec8; border-radius: 10px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18); cursor: auto; user-select: text; pointer-events: auto; display: grid; gap: 8px; }
+#mf-frame #mf-editor p { margin: 0; }
+#mf-frame .mf-ed-head { font-weight: 600; }
+#mf-frame .mf-on-line { color: #6b6d74; font-size: 12px; }
+#mf-frame #mf-text { width: 100%; min-height: 72px; resize: vertical; padding: 7px 9px; border: 1px solid #d0cec8; border-radius: 8px; background: #fff; }
+#mf-frame label.mf-check { display: flex; gap: 6px; align-items: center; font-size: 12.5px; }
+#mf-frame .mf-row, #mf-panel .mf-row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+#mf-frame .mf-btn, #mf-panel .mf-btn { padding: 4px 10px; border: 1px solid #d0cec8; border-radius: 7px; background: #fff; font-size: 12.5px; cursor: pointer; }
+#mf-frame .mf-btn.mf-primary, #mf-panel .mf-btn.mf-primary { background: #2f5d8a; border-color: #2f5d8a; color: #fff; }
+#mf-frame .mf-btn.mf-danger { color: #b03a0b; }
+#mf-panel { position: fixed; right: 0; bottom: 0; width: 320px; z-index: 2147483002; display: flex; flex-direction: column; background: #fff; border-left: 1px solid #e3e1dc; box-shadow: -4px 0 16px rgba(0, 0, 0, 0.08); }
+#mf-panel.mf-collapsed { bottom: auto; border-bottom: 1px solid #e3e1dc; border-bottom-left-radius: 10px; }
+#mf-panel.mf-collapsed .mf-body { display: none; }
+#mf-panel .mf-head { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; border-bottom: 1px solid #e3e1dc; }
+#mf-panel .mf-head strong { font-weight: 600; font-size: 14px; }
+#mf-panel .mf-body { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+#mf-panel .mf-hint { margin: 10px 12px 0; color: #6b6d74; font-size: 12.5px; }
+#mf-panel #mf-screen { margin: 10px 12px; }
+#mf-panel #mf-list { flex: 1; overflow-y: auto; padding: 0 12px 12px; }
+#mf-panel h3 { margin: 12px 0 6px; font-size: 12.5px; font-weight: 600; color: #6b6d74; }
+#mf-panel .mf-item { display: block; width: 100%; margin-bottom: 6px; padding: 7px 9px; text-align: left; border: 1px solid #e3e1dc; border-radius: 8px; background: #f6f5f2; cursor: pointer; }
+#mf-panel .mf-item.mf-here { background: #fff; }
+#mf-panel .mf-badge { display: inline-block; min-width: 20px; margin-right: 6px; padding: 0 6px; border-radius: 4px; background: #d9480f; color: #fff; font-weight: 600; font-size: 12px; text-align: center; }
+#mf-panel .mf-badge.mf-whole { background: #6b6d74; }
+#mf-panel .mf-tag { display: block; margin-top: 3px; color: #6b6d74; font-size: 12px; }
+#mf-panel .mf-empty { margin: 4px 0; color: #6b6d74; }
+#mf-panel .mf-foot { padding: 10px 12px; border-top: 1px solid #e3e1dc; display: grid; gap: 6px; }
+#mf-panel #mf-status { margin: 0; min-height: 17px; color: #6b6d74; font-size: 12px; }
+#mf-frame .mf-sr, #mf-panel .mf-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+</style>
+<script>
+(() => {
+	const bar = document.getElementById("flow-bar");
+	if (!bar) {
+		console.error('Mockup feedback: no element with id="flow-bar". Put id="flow-bar" on the dark tab bar, then reload.');
+		return;
+	}
+
+	const PANEL_WIDTH = 320;
+	const MIN_BOX = 8;
+	const fileName = decodeURIComponent(location.pathname.split("/").pop() || "mockup.html");
+	const notesFileName = `${fileName.replace(/\.html?$/i, "")}.notes.json`;
+	const storageKey = `mockup-feedback:${location.pathname}`;
+
+	const h = (tag, attrs = {}, ...children) => {
+		const node = document.createElement(tag);
+		for (const [key, value] of Object.entries(attrs)) {
+			if (value === false || value === undefined) continue;
+			if (key.startsWith("on")) node.addEventListener(key.slice(2), value);
+			else if (key === "text") node.textContent = value;
+			else node.setAttribute(key, value === true ? "" : value);
+		}
+		node.append(...children);
+		return node;
+	};
+	const clean = (text) => (text || "").replace(/\s+/g, " ").trim().slice(0, 160);
+	const time = () => new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+
+	// The mockup's own tabs and states.
+	const tabButton = (number) => bar.querySelector(`[data-tab="${number}"]`);
+	const tabName = (number) => clean(tabButton(number)?.textContent).replace(/^\d+\.\s*/, "");
+	const tabs = () => [...bar.querySelectorAll("[data-tab]")].map((button) => ({ number: Number(button.dataset.tab), name: tabName(button.dataset.tab) }));
+	const states = () => [...document.querySelectorAll("[data-state]")];
+	const currentState = () => states().find((state) => state.getClientRects().length > 0);
+	const currentTab = () => Number(currentState()?.dataset.state);
+
+	// Saved state: whether the layer is on, and every note.
+	const loadSaved = () => {
+		try {
+			return JSON.parse(localStorage.getItem(storageKey)) || {};
+		} catch {
+			return {};
+		}
+	};
+	const saved = loadSaved();
+	let notes = Array.isArray(saved.notes) ? saved.notes : [];
+	let on = saved.on === true;
+	const persist = () => {
+		try {
+			localStorage.setItem(storageKey, JSON.stringify({ on, notes }));
+			status(`Kept in this browser at ${time()}.`);
+		} catch {
+			status("This browser won't keep notes for this file. Press Save notes before you close it.");
+		}
+	};
+
+	// What a box covers, read from the live page.
+	const HEADING = "h1, h2, h3, h4, h5, h6, [role=heading]";
+	const STOP = "a, button, input, select, textarea, label, img, li, tr, h1, h2, h3, h4, h5, h6, [role]";
+	const ROLE = { A: "link", BUTTON: "button", SELECT: "combobox", TEXTAREA: "textbox", IMG: "img", NAV: "navigation", MAIN: "main", HEADER: "banner", FOOTER: "contentinfo", ASIDE: "complementary", FORM: "form", TABLE: "table", TR: "row", TH: "columnheader", TD: "cell", UL: "list", OL: "list", LI: "listitem", DIALOG: "dialog", H1: "heading", H2: "heading", H3: "heading", H4: "heading", H5: "heading", H6: "heading" };
+	const INPUT_ROLE = { checkbox: "checkbox", radio: "radio", button: "button", submit: "button", range: "slider", search: "searchbox" };
+	const roleOf = (node) => node.getAttribute("role") || (node.tagName === "INPUT" ? INPUT_ROLE[node.type] || "textbox" : ROLE[node.tagName] || "");
+	const textOf = (node) => clean(node.innerText || node.value || node.getAttribute("placeholder") || node.getAttribute("aria-label") || node.getAttribute("alt") || node.getAttribute("title"));
+	const hasOwnText = (node) => /^(INPUT|SELECT|TEXTAREA|IMG)$/.test(node.tagName) || [...node.childNodes].some((child) => child.nodeType === Node.TEXT_NODE && child.textContent.trim());
+	const area = (rect) => rect.width * rect.height;
+	const overlap = (a, b) => Math.max(0, Math.min(a.right, b.right) - Math.max(a.left, b.left)) * Math.max(0, Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top));
+	const pathOf = (node, root) => {
+		const parts = [];
+		for (let at = node; at && at !== root; at = at.parentElement) {
+			const classes = [...at.classList].slice(0, 2).map((name) => `.${name}`).join("");
+			parts.unshift(at.tagName.toLowerCase() + (at.id ? `#${at.id}` : classes));
+		}
+		return parts.slice(-4).join(" > ");
+	};
+	const headingFor = (node, root) => {
+		const inside = node.querySelector(HEADING);
+		if (inside) return textOf(inside);
+		let above = null;
+		for (const heading of root.querySelectorAll(HEADING)) {
+			if (heading === node) continue;
+			if (heading.compareDocumentPosition(node) & Node.DOCUMENT_POSITION_FOLLOWING) above = heading;
+			else break;
+		}
+		return above ? textOf(above) : "";
+	};
+	const summary = (node) => ({ tag: node.tagName.toLowerCase(), role: roleOf(node), text: textOf(node) });
+
+	const describe = (box, state) => {
+		const origin = state.getBoundingClientRect();
+		const drawn = { left: origin.left + box.x, top: origin.top + box.y, right: origin.left + box.x + box.width, bottom: origin.top + box.y + box.height };
+		const all = [...state.querySelectorAll("*")].filter((node) => !node.ownerSVGElement && area(node.getBoundingClientRect()) > 0);
+		const covered = all.filter((node) => {
+			const rect = node.getBoundingClientRect();
+			return overlap(rect, drawn) / area(rect) >= 0.6;
+		});
+		const coveredSet = new Set(covered);
+		const outermost = covered.filter((node) => !coveredSet.has(node.parentElement));
+		let target;
+		if (outermost.length === 0) {
+			const center = { left: (drawn.left + drawn.right) / 2, top: (drawn.top + drawn.bottom) / 2 };
+			center.right = center.left + 1;
+			center.bottom = center.top + 1;
+			target = all.filter((node) => overlap(node.getBoundingClientRect(), center) > 0).pop() || state;
+		} else if (outermost.length === 1) {
+			target = outermost[0];
+			for (;;) {
+				const shown = [...target.children].filter((child) => area(child.getBoundingClientRect()) > 0);
+				if (target.matches(STOP) || shown.length !== 1 || !coveredSet.has(shown[0])) break;
+				target = shown[0];
+			}
+		} else {
+			target = outermost[0].parentElement;
+			while (target !== state && !outermost.every((node) => target.contains(node))) target = target.parentElement;
+		}
+		const element = { ...summary(target), heading: headingFor(target, state), path: pathOf(target, state) };
+		if (outermost.length > 1) element.covers = covered.filter(hasOwnText).slice(0, 20).map(summary);
+		return element;
+	};
+
+	// The layer's own elements.
+	// While Feedback is on, the bar sits above the marks so a scrolled mark passes under it.
+	const barZIndex = bar.style.zIndex;
+	const count = h("span");
+	const toggle = h("button", { id: "mf-switch", type: "button", "aria-pressed": "false", onclick: () => setOn(!on) }, "Feedback", count);
+	bar.append(toggle);
+
+	const marks = h("div");
+	const text = h("textarea", { id: "mf-text", placeholder: "What should change here?", oninput: () => editNote({ text: text.value }) });
+	const everywhere = h("input", { type: "checkbox", onchange: () => editNote({ everywhere: everywhere.checked }) });
+	const editorHead = h("p", { class: "mf-ed-head" });
+	const onLine = h("p", { class: "mf-on-line" });
+	const textLabel = h("label", { class: "mf-sr", for: "mf-text" });
+	const confirmDelete = h("span", { class: "mf-row", hidden: true }, "Delete this note?",
+		h("button", { type: "button", class: "mf-btn mf-danger", onclick: () => deleteNote(), text: "Delete" }),
+		h("button", { type: "button", class: "mf-btn", onclick: () => { confirmDelete.hidden = true; }, text: "Keep" }));
+	const editor = h("div", { id: "mf-editor", role: "dialog", hidden: true },
+		editorHead, onLine, textLabel, text,
+		h("label", { class: "mf-check" }, everywhere, "Applies everywhere, not just this screen"),
+		h("div", { class: "mf-row" },
+			h("button", { type: "button", class: "mf-btn mf-primary", onclick: () => closeEditor(true), text: "Done" }),
+			h("button", { type: "button", class: "mf-btn mf-danger", onclick: () => { confirmDelete.hidden = false; }, text: "Delete" }),
+			confirmDelete));
+	const frame = h("div", { id: "mf-frame", hidden: true }, marks, editor);
+	const layer = h("div", { id: "mf-layer", hidden: true });
+
+	const list = h("div", { id: "mf-list" });
+	const statusLine = h("p", { id: "mf-status", "aria-live": "polite" });
+	const status = (message) => { statusLine.textContent = message; };
+	const hideList = h("button", { type: "button", class: "mf-btn", "aria-expanded": "true", onclick: () => {
+		const collapsed = panel.classList.toggle("mf-collapsed");
+		hideList.textContent = collapsed ? "Show list" : "Hide list";
+		hideList.setAttribute("aria-expanded", String(!collapsed));
+	}, text: "Hide list" });
+	const screenButton = h("button", { id: "mf-screen", type: "button", class: "mf-btn", onclick: () => addNote(null), text: "Note on this screen" });
+	const panel = h("aside", { id: "mf-panel", "aria-label": "Feedback", hidden: true },
+		h("div", { class: "mf-head" }, h("strong", { text: "Feedback" }), hideList),
+		h("div", { class: "mf-body" },
+			h("p", { class: "mf-hint", text: "Drag over the page to mark a spot. Click a number to open its note." }),
+			screenButton,
+			list,
+			h("div", { class: "mf-foot" },
+				h("div", { class: "mf-row" },
+					h("button", { type: "button", class: "mf-btn mf-primary", onclick: () => saveFile(), text: "Save notes" }),
+					h("button", { type: "button", class: "mf-btn", onclick: () => copyNotes(), text: "Copy notes" })),
+				statusLine)));
+	document.body.append(layer, frame, panel);
+
+	// Geometry. A box is stored relative to its state's top left corner, in page pixels.
+	// Marks live in a zero-size frame in the page, so they scroll with it; page points convert to the frame's own origin.
+	const barBottom = () => Math.max(0, bar.getBoundingClientRect().bottom);
+	const stateOrigin = (state) => {
+		const rect = state.getBoundingClientRect();
+		return { x: rect.left + scrollX, y: rect.top + scrollY, width: rect.width, height: rect.height };
+	};
+	const local = (x, y) => {
+		const rect = frame.getBoundingClientRect();
+		return { x: x - rect.left - scrollX, y: y - rect.top - scrollY };
+	};
+	const place = () => {
+		const top = barBottom();
+		layer.style.top = `${top}px`;
+		panel.style.top = `${top}px`;
+	};
+	const position = (node, x, y, width, height) => {
+		const at = local(x, y);
+		Object.assign(node.style, { left: `${at.x}px`, top: `${at.y}px`, width: `${width}px`, height: `${height}px` });
+	};
+
+	// Notes.
+	let open = null;
+	let returnTo = null;
+	const byNumber = (number) => notes.find((note) => note.number === number);
+	const nextNumber = () => notes.reduce((highest, note) => Math.max(highest, note.number), 0) + 1;
+
+	const addNote = (box) => {
+		const state = currentState();
+		if (!state) return;
+		const number = currentTab();
+		const note = { number: nextNumber(), tab: { number, name: tabName(number) }, box, element: box ? describe(box, state) : null, everywhere: false, text: "", created: new Date().toISOString() };
+		notes.push(note);
+		persist();
+		openEditor(note, box ? () => numberButton(note.number) : () => screenButton);
+	};
+	const editNote = (changes) => {
+		Object.assign(open, changes);
+		persist();
+		renderList();
+	};
+	const deleteNote = () => {
+		const number = open.number;
+		notes = notes.filter((note) => note.number !== number);
+		open = null;
+		editor.hidden = true;
+		persist();
+		render();
+		status(`Deleted note ${number}. Kept in this browser at ${time()}.`);
+		screenButton.focus();
+	};
+
+	const elementLine = (note) => {
+		if (!note.box) return "About the whole screen.";
+		const { tag, text: words, heading } = note.element;
+		return `On: ${tag}${words ? ` "${words.slice(0, 60)}"` : ""}${heading ? `, under "${heading.slice(0, 60)}"` : ""}`;
+	};
+	const openEditor = (note, opener) => {
+		open = note;
+		returnTo = opener;
+		editorHead.textContent = `Note ${note.number} on ${note.tab.number}. ${note.tab.name}`;
+		editor.setAttribute("aria-label", `Note ${note.number}`);
+		textLabel.textContent = `Note ${note.number}`;
+		onLine.textContent = elementLine(note);
+		text.value = note.text;
+		everywhere.checked = note.everywhere;
+		confirmDelete.hidden = true;
+		editor.hidden = false;
+		render();
+		const origin = stateOrigin(currentState());
+		const room = scrollX + innerWidth - (panel.classList.contains("mf-collapsed") ? 0 : PANEL_WIDTH) - 8;
+		let x = scrollX + 24;
+		let y = scrollY + barBottom() + 16;
+		if (note.box) {
+			x = origin.x + note.box.x + note.box.width + 12;
+			y = origin.y + note.box.y;
+			if (x + 300 > room) x = origin.x + note.box.x - 312;
+			if (x < scrollX + 8) {
+				x = Math.min(origin.x + note.box.x, room - 300);
+				y = origin.y + note.box.y + note.box.height + 12;
+			}
+		}
+		const at = local(x, y);
+		editor.style.left = `${at.x}px`;
+		editor.style.top = `${at.y}px`;
+		editor.scrollIntoView({ block: "nearest" });
+		text.focus({ preventScroll: true });
+	};
+	const closeEditor = (giveFocusBack) => {
+		if (!open) return;
+		open = null;
+		editor.hidden = true;
+		render();
+		if (giveFocusBack) returnTo?.()?.focus();
+	};
+
+	const numberButton = (number) => marks.querySelector(`[data-number="${number}"]`);
+	const renderMarks = () => {
+		const state = currentState();
+		const tab = currentTab();
+		marks.replaceChildren();
+		if (!state) return;
+		const origin = stateOrigin(state);
+		for (const note of notes) {
+			if (note.tab.number !== tab || !note.box) continue;
+			const mark = h("div", { class: `mf-mark${open === note ? " mf-active" : ""}` },
+				h("button", { type: "button", class: "mf-num", "data-number": String(note.number), "aria-label": `Note ${note.number}: ${note.text || "no words yet"}`, onclick: () => openEditor(note, () => numberButton(note.number)), text: String(note.number) }));
+			position(mark, origin.x + note.box.x, origin.y + note.box.y, note.box.width, note.box.height);
+			marks.append(mark);
+		}
+	};
+	const renderList = () => {
+		count.textContent = notes.length ? ` (${notes.length})` : "";
+		if (notes.length === 0) {
+			list.replaceChildren(h("p", { class: "mf-empty", text: "No notes yet. Drag over the page to mark a spot, or add a note on this screen." }));
+			return;
+		}
+		const order = tabs().map((tab) => tab.number);
+		const groups = new Map();
+		for (const note of [...notes].sort((a, b) => a.number - b.number)) {
+			if (!groups.has(note.tab.number)) groups.set(note.tab.number, []);
+			groups.get(note.tab.number).push(note);
+		}
+		const tabNumbers = [...groups.keys()].sort((a, b) => order.indexOf(a) - order.indexOf(b));
+		list.replaceChildren(...tabNumbers.map((number) => h("section", {},
+			h("h3", { text: `${number}. ${groups.get(number)[0].tab.name}` }),
+			...groups.get(number).map((note) => h("button", { type: "button", class: `mf-item${number === currentTab() ? " mf-here" : ""}`, "data-number": String(note.number), onclick: () => jump(note) },
+				h("span", { class: `mf-badge${note.box ? "" : " mf-whole"}`, text: String(note.number) }),
+				note.text || "(no words yet)",
+				h("span", { class: "mf-tag", text: [note.box ? "" : "Whole screen", note.everywhere ? "Applies everywhere" : ""].filter(Boolean).join(", ") }))))));
+	};
+	const render = () => {
+		toggle.setAttribute("aria-pressed", String(on));
+		layer.hidden = !on;
+		frame.hidden = !on;
+		panel.hidden = !on;
+		bar.style.zIndex = on ? "2147483003" : barZIndex;
+		for (const state of states()) state.inert = on;
+		place();
+		renderMarks();
+		renderList();
+	};
+
+	const jump = (note) => {
+		const button = tabButton(note.tab.number);
+		if (button && currentTab() !== note.tab.number) button.click();
+		const state = currentState();
+		if (state && note.box) scrollTo(scrollX, stateOrigin(state).y + note.box.y - barBottom() - 80);
+		place();
+		openEditor(note, () => list.querySelector(`[data-number="${note.number}"]`));
+	};
+
+	const setOn = (value) => {
+		on = value;
+		if (!on) closeEditor(false);
+		persist();
+		render();
+	};
+
+	// Drawing.
+	let start = null;
+	let ghost = null;
+	const pagePoint = (event) => ({ x: event.clientX + scrollX, y: event.clientY + scrollY });
+	const boxBetween = (a, b) => ({ x: Math.min(a.x, b.x), y: Math.min(a.y, b.y), width: Math.abs(a.x - b.x), height: Math.abs(a.y - b.y) });
+	layer.addEventListener("pointerdown", (event) => {
+		if (event.button !== 0) return;
+		event.preventDefault();
+		closeEditor(false);
+		if (!currentState()) return;
+		start = pagePoint(event);
+		ghost = h("div", { class: "mf-mark mf-ghost" });
+		marks.append(ghost);
+		layer.setPointerCapture(event.pointerId);
+	});
+	layer.addEventListener("pointermove", (event) => {
+		if (!start) return;
+		const box = boxBetween(start, pagePoint(event));
+		position(ghost, box.x, box.y, box.width, box.height);
+	});
+	const endDrag = () => {
+		start = null;
+		ghost?.remove();
+		ghost = null;
+	};
+	layer.addEventListener("pointerup", (event) => {
+		if (!start) return;
+		const drawn = boxBetween(start, pagePoint(event));
+		endDrag();
+		if (drawn.width < MIN_BOX || drawn.height < MIN_BOX) return;
+		const origin = stateOrigin(currentState());
+		const x = Math.max(0, Math.round(drawn.x - origin.x));
+		const y = Math.max(0, Math.round(drawn.y - origin.y));
+		const box = { x, y, width: Math.min(Math.round(drawn.width), Math.round(origin.width) - x), height: Math.min(Math.round(drawn.height), Math.round(origin.height) - y) };
+		addNote(box);
+	});
+	layer.addEventListener("pointercancel", endDrag);
+
+	// Saving and copying.
+	const notesJson = () => JSON.stringify({ mockup: fileName, saved: new Date().toISOString(), tabs: tabs(), notes: [...notes].sort((a, b) => a.number - b.number) }, null, 2);
+	const saveFile = () => {
+		const url = URL.createObjectURL(new Blob([notesJson()], { type: "application/json" }));
+		const link = h("a", { href: url, download: notesFileName });
+		document.body.append(link);
+		link.click();
+		link.remove();
+		setTimeout(() => URL.revokeObjectURL(url), 1000);
+		status(`Saved ${notesFileName} to your downloads folder.`);
+	};
+	const copyNotes = () => {
+		Promise.resolve()
+			.then(() => navigator.clipboard.writeText(notesJson()))
+			.then(() => status(`Copied ${notes.length} ${notes.length === 1 ? "note" : "notes"}. Paste them into the chat.`))
+			.catch(() => status("This browser blocked copying. Press Save notes instead."));
+	};
+
+	// Keeping up with the mockup.
+	const follow = () => {
+		if (open && open.tab.number !== currentTab()) closeEditor(false);
+		render();
+	};
+	const watcher = new MutationObserver(follow);
+	for (const node of [...states(), ...bar.querySelectorAll("[data-tab]")]) watcher.observe(node, { attributes: true, attributeFilter: ["hidden", "class", "style", "aria-selected"] });
+	addEventListener("resize", follow);
+	addEventListener("scroll", place, { passive: true });
+	document.addEventListener("keydown", (event) => {
+		if (event.key !== "Escape") return;
+		if (start) endDrag();
+		else if (open) {
+			event.preventDefault();
+			closeEditor(true);
+		}
+	});
+
+	render();
+	status(notes.length ? `${notes.length} ${notes.length === 1 ? "note" : "notes"} kept in this browser.` : "");
+})();
+</script>

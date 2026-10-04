@@ -3,6 +3,7 @@
 
 Checks every skill's frontmatter, that the mode's index matches the description
 lines, and that no file carries an em dash or a harness name where it shouldn't.
+A skill's .html files, like the mockup's feedback layer, get the same text checks.
 Vendored skills (the vendor.json list) are upstream text copied verbatim, so they
 only have to exist with a SKILL.md.
 """
@@ -70,9 +71,10 @@ def main():
         if "/.git" in dirpath or "__pycache__" in dirpath:
             continue
         for f in files:
-            if f.endswith((".md", ".py", ".sh", ".json")):
-                path = os.path.join(dirpath, f)
-                check_text(os.path.relpath(path, ROOT), path)
+            path = os.path.join(dirpath, f)
+            rel = os.path.relpath(path, ROOT)
+            if f.endswith((".md", ".py", ".sh", ".json")) or (f.endswith(".html") and rel.split(os.sep)[0] == "skills"):
+                check_text(rel, path)
     mode = open(build_index.MODE).read()
     start, end = "<!-- index:start -->", "<!-- index:end -->"
     current = mode.split(start, 1)[1].split(end, 1)[0].strip()
