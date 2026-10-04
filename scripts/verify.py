@@ -73,7 +73,7 @@ def main():
         for f in files:
             path = os.path.join(dirpath, f)
             rel = os.path.relpath(path, ROOT)
-            if f.endswith((".md", ".py", ".sh", ".json")) or (f.endswith(".html") and rel.startswith("skills/")):
+            if f.endswith((".md", ".py", ".sh", ".json")) or (f.endswith(".html") and rel.split(os.sep)[0] == "skills"):
                 check_text(rel, path)
     mode = open(build_index.MODE).read()
     start, end = "<!-- index:start -->", "<!-- index:end -->"
