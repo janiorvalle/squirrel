@@ -27,10 +27,11 @@ Anything that can change the code runs before anything that judges the code. Rev
 1. Format and lint, autofix. Cheap, deterministic, changes the code. Always first.
 2. Typecheck or compile. Catches structural breakage before you waste a test run.
 3. Fast tests. Whatever runs in seconds to a couple of minutes.
-4. Automated review, looped until clean. No cap on rounds, no class of findings excluded; those are the human's to change. If the loop won't converge, stop and hand them the last verdict as a Decide. The diff is now stable and green. Treat each finding as a claim, verify it against the real code, fix what's verified, and go again. After every fix round, rerun steps one to three first.
-5. The full suite, once, at the end. End to end, accessibility, the long wall, against the final review-clean diff.
+4. Shrink the diff against the ticket. Then the tier's review, `review-by-risk`: a fresh-context read by a subagent that didn't write the code for a low-tier change, automated review for the rest.
+5. Automated review, until it converges. Round one reads the whole diff, every later round reads only the fix. Each finding is a claim: verify it against the real code, fix what this diff caused inside the fence, an untouched caller it broke included, and resolve the rest with a written reason. No cap on rounds; the fence caps the diff, and drift past it gets reverted, never kept. The threshold and the tiers are the human's. After every fix round, rerun steps one to three first. `land-pr` has the loop.
+6. The full suite, once, at the end, every tier. End to end, accessibility, the long wall, against the final diff.
 
-Every project splits its checks into a fast tier and a full tier. What goes where is the only per-project decision.
+Every project splits its checks into a fast tier and a full tier, and lists its high-risk and low-risk paths in REVIEW.md. Those are the per-project decisions.
 
 If the full suite fails at the end, don't restart the review loop. Fix the failure, rerun the fast tier, then review only the fix. The delta is what changed, so the delta is what gets judged.
 

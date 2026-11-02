@@ -30,7 +30,7 @@ Version control and the PR host CLI. Every flow assumes both. Setup checks for t
 
 ## roast
 
-The independent code review gate. A different model than the one that wrote the diff reviews it, until it says well done.
+The independent code review gate. A different model than the one that wrote the diff reviews it, until the loop converges: well done, or every open finding resolved with a reason. `review-by-risk` says which changes it runs on.
 
 - Repo: https://github.com/janiorvalle/roast
 - Check: `command -v roast`
@@ -40,7 +40,7 @@ The independent code review gate. A different model than the one that wrote the 
 - Install (windows): `irm https://raw.githubusercontent.com/janiorvalle/roast/main/install.ps1 | iex`
 - Skill install: `roast install-skill --force`
 - Skill folder: `roast`
-- The skill covers the scope fence and the loop until well done. roast installs it on its own the first time it runs in a repo.
+- The skill covers the scope fence. The loop itself, delta-only rounds and resolving with a reason, is in `land-pr`, which wins where the two differ. roast installs its skill on its own the first time it runs in a repo.
 - roast refuses to run without TruffleHog on PATH, its `ROAST-SECRET-BINARY` error. Its installer doesn't bring it, so setup installs it from the section below.
 
 ## TruffleHog

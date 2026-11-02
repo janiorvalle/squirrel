@@ -6,7 +6,7 @@
 
 How I work with coding agents, written down as skills.
 
-One flow from claiming a task to turning it in with proof. Twenty-four principles, each one rule with a test. Twenty-six workflows for the parts that need steps. A mode skill that ties it together. Every file is written for an agent in Claude Code, Codex, Cursor, or anything else that loads skills from a folder.
+One flow from claiming a task to turning it in with proof. Twenty-four principles, each one rule with a test. Twenty-nine workflows for the parts that need steps. A mode skill that ties it together. Every file is written for an agent in Claude Code, Codex, Cursor, or anything else that loads skills from a folder.
 
 The opinions are the point. A human stays in the merge seat. Every claim ships with evidence. The obvious solution beats the clever one. If you don't agree, this isn't your stack, and that's fine.
 
@@ -50,7 +50,7 @@ Restart your harness so the skills load. Then start any multi-step task with `/s
 
 The flow leans on two tools. `squirrel setup` offers each one that's missing or behind its latest release, and an update runs through whoever installed the binary: `brew upgrade` for a Homebrew one, the `tools.md` line for one in `~/.local/bin`, the pinned npm line for an npm one. A binary anywhere else is shown with its path and left to you.
 
-- **roast**, the independent review gate. A different model reviews the diff until it says well done. It needs TruffleHog for its secret scan, and setup installs that too.
+- **roast**, the independent review gate. A different model reviews the diff until the loop converges, and the change's risk tier says whether it runs at all. It needs TruffleHog for its secret scan, and setup installs that too.
 - **agent-browser**, a real browser from the command line, for using what you built like a person would.
 
 The work tracker isn't a tool setup installs. Each repo names its own on a `Tracker:` line in its instructions file, and the `tracker` skill has the contract, the ticket shape, and the commands for markdown tasks, GitHub Issues, and Linear.

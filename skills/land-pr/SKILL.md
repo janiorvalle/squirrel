@@ -11,21 +11,43 @@ The last stretch of a change. Get it committed, gated, described, proven, and tu
 
 - Never commit to the default branch. Branch first.
 - One task, one branch. Don't pile a second task onto a branch that's already carrying one.
-- Commit and push only when the human asked, or when opening the PR is the task.
+- Push only when the human asked, or when opening the PR is the task. Commit on the task branch as the work goes; the review loop needs a commit per round.
 
 ## The gates, in order
 
-Cheap steps that change the code first, the expensive judgment last. Review reads the diff, so if the diff moves after review, you pay for review twice.
+`review-by-risk` sets the tier first, from the paths the diff touches. The tier says which of these run. Within the tier, cheap steps that change the code first, the expensive judgment last. Review reads the diff, so if the diff moves after review, you pay for review twice.
 
 1. Format and lint, autofix. Always first.
 2. Typecheck or compile.
 3. Fast tests. Seconds to a couple of minutes.
-4. `roast`, looped until it says well done. Run it bare, never with `--max-priority`; the threshold is the human's and the default is theirs. Rerun steps one to three before each round. Follow the roast skill for the scope fence.
-5. The full suite, once, against the final review-clean diff.
+4. Shrink the diff. Read it against the ticket's Fix and Done-when lines and remove what they didn't ask for. `no-comments` runs here.
+5. Low tier: a fresh-context read. A subagent that didn't write the code gets the diff and the ticket, nothing else, and reports. Verify each finding against the code and fix what holds inside the diff; anything else is a follow-up. A verified finding moves the change to standard.
+6. Standard and high: the roast loop below.
+7. High only: `interrogate`, then `blast-radius`, then the approver named in the PR, from REVIEW.md's High risk line or the human directing the task.
+8. The full suite, once, against the final diff. Every tier.
 
 If the full suite fails at the end, don't restart the review loop. Fix it, rerun the fast tier, review only the fix.
 
 Use the project's own commands for each step. This is about the order, not the tools.
+
+## The roast loop
+
+Freeze the fence first, the way the roast skill says: the request in a sentence, the intended behavior, the owner boundary, the files, and the diff's size at the freeze, files and non-test lines, in a file outside the repo. Pass it every round with `--intent-file`, and the repo's REVIEW.md with `--context-glob REVIEW.md` when it has one. No other flags, and never `--max-priority`; the threshold is the human's and the default is theirs.
+
+1. Commit the work. Round one reads the whole branch: `roast --base origin/<base>`.
+2. Every finding is a claim. Verify it against the real code.
+3. Sort each verified finding. These are the only outcomes:
+   - Caused by this diff, inside the fence, wherever it shows, an untouched caller the diff broke included: fix it.
+   - Not caused by this diff: pre-existing. Resolve it with that reason, one sentence in the report, never a fix, short of the four things below that widen the fence.
+   - Outside the fence: a follow-up. Resolve it with that reason.
+   - Wrong: resolve it with the evidence.
+   - Needs a new contract, a migration, a different owner, or a design call: stop and bring it as a Decide. The only thing that stops the loop mid-task.
+   A finding this diff caused inside the fence is fixed or escalated. "Later" and "too hard" are not reasons.
+4. Append each resolved finding and its reason to the intent file, so the next round judges against it.
+5. Rerun gates one to three on the fix, then `roast --dirty` with the same flags. It reads only the uncommitted fix. Commit the fix once read.
+6. Repeat until roast says well done, or every open finding is resolved with a reason. There is no round cap. The fence is the cap.
+
+The fence holds the diff. When the diff grows past double the files or non-test lines recorded at the freeze, that's drift: revert the edits outside the fence and keep going on what's left. Only active data loss, a crash, a broken build or install, or a concrete security exposure may widen the fence, and those four are the only pre-existing findings that get fixed.
 
 ## Commit titles
 
@@ -46,7 +68,15 @@ Good:
 
 > My "new worktree" default was ignored when starting new threads on existing worktrees. Super unintuitive. Now your preferences always apply.
 
-Write it in the ticket shape from `tracker`: problem, fix, done when. Put the task id in it. End with a line naming the model and harness that made the change.
+Write it in the ticket shape from `tracker`: problem, fix, done when. Put the task id in it. Then three lines a human reads instead of the diff:
+
+```
+Risk: the tier, and what breaks if this is wrong, in one line.
+Revert: the one command or step that undoes it.
+Review: each finding resolved with a reason, one line each, or none.
+```
+
+A high-tier PR also names its human approver, from REVIEW.md's High risk line or the human directing the task. End with a line naming the model and harness that made the change.
 
 ## Proof
 
@@ -67,4 +97,6 @@ Turn the task in with the PR open, evidence attached, and the branch left standi
 - Merge your own PR unless the human explicitly said to.
 - Change the diff after review without rerunning the fast tier and reviewing the delta.
 - Open a PR with failing or unread checks and call it done.
-- Skip roast quietly. If it isn't installed, say so and point at tools.md.
+- Skip the tier's gate quietly. If roast isn't installed, say so and point at tools.md.
+- Fix a finding this diff didn't cause, short of data loss, a crash, a broken build, or a security exposure. It's pre-existing; resolve it with that reason.
+- Stop the loop because it's still finding things. Only a design call stops it.

@@ -35,6 +35,12 @@ If the second try at an approach fails the same way the first did, the approach 
 
 Code doesn't change between runs. State does. When something fails after a restart, suspect leftover state before code: config files, caches, lock files, serialized state. If clearing a state file fixes it, the real fix is validating that state on the way in.
 
+## A regression leaves a check behind
+
+A bug a merged change introduced is a regression, and it means a layer missed it: format and lint, types, the fast tests, the fresh read, roast, the full suite, or the human. Before the fix closes, name the layer that should have caught it and add the check that would have. A test for a behavior nobody tested. A lint for a shape the reviewer keeps missing. A REVIEW.md line for a guarantee the reviewer didn't know. A path proposed for a higher tier in REVIEW.md, which the human moves. The ticket carries the `regression` label and the layer, the way `tracker` says.
+
+That list is the regression log. It's the evidence for moving a path between tiers, and the set roast is scored against when its prompt, model, or REVIEW.md changes: run roast on each logged commit and count the bugs it finds.
+
 ## Then prove it
 
 Capture the same thing you captured at the start. Before and after, side by side. That pair is the evidence for the fix.
