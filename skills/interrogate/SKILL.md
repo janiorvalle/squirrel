@@ -1,6 +1,6 @@
 ---
 name: interrogate
-description: "Use for \"interrogate this\", \"tear this apart\", \"find the blind spots\", or a contested design before it ships. Sends the same diff and rubric to one reviewer per model, merges findings by consensus, then you as lead sort them into act on, consider, noted, dismissed. Never auto-applies. Roast is the required gate. This is the deeper optional pass."
+description: "Use for \"interrogate this\", \"tear this apart\", \"find the blind spots\", or a contested design before it ships. Sends the same diff and rubric to one reviewer per model, merges findings by consensus, then you as lead sort them into act on, consider, noted, dismissed. Never auto-applies. Runs on every high-tier change, and on request for a contested design."
 disable-model-invocation: true
 ---
 
