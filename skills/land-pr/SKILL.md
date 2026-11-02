@@ -32,7 +32,7 @@ Use the project's own commands for each step. This is about the order, not the t
 
 ## The roast loop
 
-Freeze the fence first, the way the roast skill says: the request in a sentence, the intended behavior, the owner boundary, the files, and the diff's size at the freeze, files and non-test lines, in a file outside the repo. Pass it every round with `--intent-file`, and the repo's REVIEW.md with `--context-glob REVIEW.md` when it has one. No other flags, and never `--max-priority`; the threshold is the human's and the default is theirs.
+Freeze the fence first, the way the roast skill says: the request in a sentence, the intended behavior, the owner boundary, the files, and the diff's size at the freeze, files and non-test lines, in a file outside the repo. Pass it every round with `--intent-file`, and the repo's REVIEW.md with `--context-glob REVIEW.md` when it has one. Beyond those, the verdict file, and the prior verdicts the loop names below, no other flags, and never `--max-priority`; the threshold is the human's and the default is theirs.
 
 1. Commit the work. Round one reads the whole branch: `roast --base origin/<base> --json-output <round-1.json>`, the verdict file outside the repo like the intent file.
 2. Every finding is a claim. Verify it against the real code.
