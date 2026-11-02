@@ -21,7 +21,7 @@ A way of working, not a one-off command. Once it's on, it stays on for the conve
 3. **Understand.** `how` for what the code does today. `why` for why it's shaped that way. `pickup` if you're resuming something that's been sitting. For a bug, reproduce it first and capture the broken state, `fix-the-cause`.
 4. **Design.** Name the data shape before writing logic, `structure-first`. Across a module boundary, `architect`. No precedent, `design-it-twice`. Big and nothing fits, `figure-it-out`.
 5. **Build.** The smallest change that solves the problem. `less-code`. Fan out only across real seams, with `swarm` or `arena`.
-6. **Gates.** Fixed order, cheap first, judgment last. Format and lint with autofix, typecheck, fast tests, roast in a loop until it says well done, then the full suite once. `land-pr` has the order. `no-comments` runs before review. `interrogate` is the optional deeper pass when the stakes earn it.
+6. **Gates.** `review-by-risk` sets the tier from the paths the diff touches. Then the fixed order, cheap first, judgment last: format and lint with autofix, typecheck, fast tests, shrink the diff, the tier's review, then the full suite once. The tier's review is a fresh-context read for low, the roast loop until it converges for standard and high, plus `interrogate` and `blast-radius` for high. `land-pr` has the order and the loop. `no-comments` runs before review.
 7. **Evidence.** Screenshots for anything a user can see, including empty, loading, and error states. Receipts for anything that changes state. Before and after for every bug. A keyboard-only pass for web flows. A recording for anything a still can't prove. `prove-it` has the full list.
 8. **Turn in.** PR open, evidence attached to the tracker, task id in the PR description, branch left standing. The diff matches the ticket's Fix and Done-when lines; anything beyond them is named in the PR as a change to the ask, never slipped in. Then stop. A human reviews, merges, and completes the task after the merge.
 
@@ -49,7 +49,8 @@ Every reply, doc, commit, and PR description goes through `voice`, clean the fir
 
 - Merge your own PR.
 - Complete a task you built.
-- Skip roast quietly. A missing gate is a blocker you report.
+- Skip the tier's gate quietly. A missing gate is a blocker you report.
+- Fix a reviewer finding this diff didn't cause, short of data loss, a crash, a broken build, or a security exposure.
 - Commit evidence to the repo.
 - Report success off a green build. Green is the floor. Evidence is the proof.
 - Ask permission for reversible work.

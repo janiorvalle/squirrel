@@ -6,7 +6,7 @@ disable-model-invocation: true
 
 # Blast radius
 
-Find what a change breaks somewhere else before it ships. `how` says what the code does. `why` says why it's shaped that way. This says what it breaks over there.
+Find what a change breaks somewhere else before it ships. `how` says what the code does. `why` says why it's shaped that way. This says what it breaks over there. It runs on every high-tier change, `review-by-risk`, and on any diff you don't trust.
 
 Listing the callers isn't the job. Grep does that in a second. The job is the breakage grep won't show you.
 

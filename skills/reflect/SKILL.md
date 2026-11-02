@@ -38,7 +38,7 @@ One subagent with `references/synthesizer.md` and all three reviewers' output in
 
 ## Step 4. Structural check
 
-Read the accepted list once more. Anything a lint rule, a hook, a script, or a runtime check would enforce more reliably than prose moves to backlog. Text is the last resort.
+Read the accepted list once more. Anything a lint rule, a hook, a script, or a runtime check would enforce more reliably than prose moves to backlog. Text is the last resort. A regression's missing check is never a skill edit; it's the check itself, in the repo, `fix-the-cause`.
 
 ## Step 5. Apply, with approval
 

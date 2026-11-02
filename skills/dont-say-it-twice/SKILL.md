@@ -37,6 +37,7 @@ If the fix is structural, only do the structural fix. The instruction was the sy
 - **A one-off.** Write it down where the project keeps decisions, so the next agent doesn't relearn it.
 - **A recurring correction.** Becomes a skill, a lint rule, or a hook.
 - **A pattern across projects.** Becomes a principle in the stack.
+- **A reviewer finding that repeats.** Not a bug: a line in the repo's REVIEW.md. A bug class: a lint or a test. `review-by-risk`.
 
 Two copies of the same rule drift. If a rule has to appear in two places, generate one from the other. The one-line index of principles in the mode is built from each skill's description line by a script. Nobody types it twice.
 

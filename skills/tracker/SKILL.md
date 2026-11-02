@@ -68,7 +68,15 @@ Done when:
 Out of scope: Optional, one line.
 ```
 
-Design notes go in the PR, the file list in the claim comment, neither in the ticket body. The same shape is the PR description and the turn-in comment.
+Design notes go in the PR, the file list in the claim comment, neither in the ticket body. The same shape is the PR description and the turn-in comment, and the PR adds the Risk, Revert, and Review lines from `land-pr`.
+
+## Regressions
+
+A fix for a bug a merged change introduced carries the layer that should have caught it, the way `fix-the-cause` says, so the tracker is the regression log.
+
+- Markdown: `regression: <layer>` in the frontmatter.
+- GitHub Issues: `gh label create regression --force` once per repo, then `gh issue edit <n> --add-label regression`, and `Missed by: <layer>` in the turn-in comment. The log is `gh issue list --label regression --state all`.
+- Linear: the `regression` label and the same line in the turn-in comment.
 
 Lint before filing. The lint is in this skill's `scripts/` folder; give its full path from wherever the skill is installed. It reads a file or stdin, exits non-zero over 120 words, on a missing or empty label, or when Done when isn't one to four lines starting with `- `, and says what to cut:
 

@@ -1,6 +1,6 @@
 ---
 name: interrogate
-description: "Use for \"interrogate this\", \"tear this apart\", \"find the blind spots\", or a contested design before it ships. Sends the same diff and rubric to one reviewer per model, merges findings by consensus, then you as lead sort them into act on, consider, noted, dismissed. Never auto-applies. Roast is the required gate. This is the deeper optional pass."
+description: "Use for \"interrogate this\", \"tear this apart\", \"find the blind spots\", or a contested design before it ships. Sends the same diff and rubric to one reviewer per model, merges findings by consensus, then you as lead sort them into act on, consider, noted, dismissed. Never auto-applies. Runs on every high-tier change, and on request for a contested design."
 disable-model-invocation: true
 ---
 
@@ -61,4 +61,4 @@ Each finding carries which models raised it, its bucket, and a one-line reason.
 
 ## Where this sits
 
-Roast is the required gate before anything ships. It runs on one engine that didn't write the code, loops until clean, and stays inside a scope fence. Interrogate is the optional deeper pass for a contested design, a change you don't trust, or a sketch from architect before building. Run it when the stakes earn it, not on every PR.
+Roast is the gate for standard and high tiers. It runs on one engine that didn't write the code, loops until it converges, and stays inside a scope fence. Interrogate runs on every high-tier change, `review-by-risk`, and on a contested design, a change you don't trust, or a sketch from architect before building. Not on every PR.
