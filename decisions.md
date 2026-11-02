@@ -274,3 +274,11 @@ What changed here, and why each piece is shaped the way it is:
 Rejected: a fresh-context read before roast on standard and high changes, which the ticket never asked for and roast's round one already is; a three-round cap with a Decide after it (the article's rule), because it stops a long session for a loop that was still finding real things; a per-repo setup skill for the GitHub side (PR reviewer, security review, branch protection, CODEOWNERS, merge queue), deferred as a follow-up with the roast changes (prior-verdict suppression, a pre-existing tag from git blame), both to be shown as tickets after this lands.
 
 The roast-managed skill still carries its two tripwires, two rounds without converging and a stop on double the diff. `land-pr` wins where they differ, and tools.md says so, until the roast repo's follow-up updates that skill.
+
+## The GitHub-side gates stay out of squirrel, and land-pr passes resolutions back to roast
+
+Written 2026-11-02, after roast 0.5.0 shipped. Issue 88.
+
+The entry above left two things open. The human closed both. A per-repo skill for the GitHub side (a reviewer on every PR, a security review action, branch protection, CODEOWNERS, a merge queue) is rejected, not deferred: "i dont want to touch repo setup in squirrel at all". Squirrel stays harness-side; those layers are each repo's own settings. And roast 0.5.0 (roast issue 19, PR 20) shipped the two tool changes: a repeatable `--prior-verdict` that honors a resolution the agent wrote on a finding in an earlier verdict, matched by file and normalized title, and a `pre_existing` tag from git blame against the branch's base, an observation below P0 and raw at P0 by the human's ruling, where a P0 takes only a `wrong` resolution. Its installed skill no longer carries a round cap or a diff-growth stop and defers the loop to land-pr.
+
+So land-pr's loop now annotates each round's verdict JSON and passes every annotated verdict back with `--prior-verdict`, instead of appending resolutions to the intent file, which roast only ever read as the fence. The intent file holds the fence and nothing else.
