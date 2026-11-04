@@ -31,7 +31,7 @@ One per model provider your harness can reach. Spawn each as a read-only subagen
 
 Every judge gets `references/judge-prompt.md` with its placeholders filled. `KIND` is the rubric's name. `CONTEXT` is the paragraph. `OWNER_CALLS` is the list, or `None.` when there are none. `ARTIFACT_LIST` names each file and what it shows, and `ARTIFACT_NAME` is the product's column heading. `REFERENCE_LIST` names each reference the same way, and `REFERENCE_COLUMNS` is one heading per reference, or `(no references)`. `RUBRIC` is the rubric file's text. Same text to everyone. The prompt never carries the bar, the round number, or earlier scores. A judge that knows the target drifts toward it.
 
-In climb mode, after round one, you may run one judge alone for interim rounds to save usage or time, the one that costs least of either, while it is below the bar. Those rounds don't count toward the stop rule. A round counts only when every judge was seated. Mark skipped cells `not run`.
+In climb mode, after round one, you may run one judge alone for interim rounds while it is below the bar, the cheapest or the fastest, your call. Those rounds don't count toward the stop rule. A round counts only when every judge was seated. Mark skipped cells `not run`.
 
 ## Step 3. Look before you send
 
@@ -64,7 +64,7 @@ Capture again at the same viewport. Start the next round.
 
 Climb mode stops when:
 
-- every seated judge scores every category at or above the bar in two consecutive rounds. One round is noise;
+- every judge scores every category at or above the bar in two consecutive full rounds. One round is noise;
 - a judge reverses itself on the same element for the second time. Blue, then amber, then neutral for the same status dot is the loop trading one preference for another. That element leaves the loop and goes to the human as a Decide;
 - the human says stop.
 
