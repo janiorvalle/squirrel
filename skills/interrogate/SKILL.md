@@ -61,4 +61,4 @@ Each finding carries which models raised it, its bucket, and a one-line reason.
 
 ## Where this sits
 
-Roast is the gate for standard and high tiers. It runs on one engine that didn't write the code, loops until it converges, and stays inside a scope fence. Interrogate runs on every high-tier change, `review-by-risk`, and on a contested design, a change you don't trust, or a sketch from architect before building. Not on every PR.
+Roast is the gate for standard and high tiers. It runs on one engine that didn't write the code, loops until it converges, and stays inside a scope fence. Interrogate runs on every high-tier change, `review-by-risk`, and on a contested design, a change you don't trust, or a sketch from architect before building. Not on every PR. For an artifact judged by taste rather than a diff, a screen, a doc, copy, `council` runs one judge per provider with a score per category and a loop; interrogate stays on code.

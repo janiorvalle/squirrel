@@ -105,3 +105,7 @@ Every state has a complete tab. The bar works. Feedback switches on and off, and
 - Settings: view, edit, saving, saved.
 - Search: initial, loading, results, no results, detail.
 - Approval: draft, submitted, under review, approved, rejected.
+
+## Where this sits
+
+A mockup settles the shape. To put a number on how good it looks, run `council` on its screenshots against two reference screens: one judge per provider scores it per category, and the loop works the weakest category until the judges agree. The mockup is the thing council edits each round, so the loop costs minutes instead of builds.
