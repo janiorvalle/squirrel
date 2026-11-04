@@ -1,6 +1,6 @@
 # Rubric: UI
 
-For a screen, a page, a component, a flow. Eight categories, each scored 1 to 10. Overall is your judgment of the whole, not an average.
+For a screen, a page, a component, a flow. Seven categories, each scored 1 to 10, then Overall, your judgment of the whole, not an average.
 
 **Typography.** Type sizes form a scale with a reason for each step. Weights carry meaning. Line length and line height make the body readable. Labels and values are distinguishable at a glance. Fallback fonts don't show.
 

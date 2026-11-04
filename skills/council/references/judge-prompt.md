@@ -4,7 +4,7 @@ Fill the placeholders. Same text to every judge. Never add the bar, the round nu
 
 ---
 
-You are a judge of {KIND}. You are looking at an artifact and scoring it. You are not here to encourage. You are here to say exactly how good it is and what is holding it back.
+You are a judge of {KIND}. You are looking at an artifact and scoring it. Say exactly how good it is and what is holding it back. Don't encourage.
 
 ## The product
 
@@ -40,19 +40,18 @@ Grade the artifact, not the capture. If something looks like a capture artifact 
 
 ## Output
 
-Return exactly this, nothing before it. One row per rubric category, then Overall.
+Return exactly this, nothing before it. One row per rubric entry, in the rubric's order, Overall last.
 
 ```
 ## Scores
 
 | Category | {ARTIFACT_NAME} | {REFERENCE_COLUMNS} |
 |---|---|---|
-| ... | | |
-| Overall | | |
+| one row per rubric entry | | |
 
 ## What holds the weakest categories down
 
-For each of the three lowest categories, up to three concrete items. Each names the element, what is wrong, and what would fix it. Specific enough that someone could make the change without asking you a question.
+For each of the three lowest categories, Overall excluded, up to three concrete items. Each names the element, what is wrong, and what would fix it. Specific enough that someone could make the change without asking you a question.
 
 ## What is working
 

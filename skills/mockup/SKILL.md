@@ -108,4 +108,4 @@ Every state has a complete tab. The bar works. Feedback switches on and off, and
 
 ## Where this sits
 
-A mockup settles the shape. To put a number on how good it looks, run `council` on its screenshots against two reference screens: one judge per provider scores it per category, and the loop works the weakest category until the judges agree. The mockup is the thing council edits each round, so the loop costs minutes instead of builds.
+A mockup settles the shape. To put a number on how good it looks, run `council` on its screenshots against the reference screens the human chose. One judge per provider scores it per category, and the working agent edits the mockup each round until every judge clears the bar. Editing the mockup instead of the app makes a round cost minutes instead of builds.

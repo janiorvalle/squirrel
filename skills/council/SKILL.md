@@ -29,17 +29,17 @@ Write these down before any judge runs and keep them fixed for every round.
 
 One per model provider your harness can reach. Spawn each as a read-only subagent with nothing but the prompt file and the files in its context, or run that provider's own command line with the prompt and the files attached. A provider you can't reach is reported as `not available`, never replaced with a second model from a provider already seated. Same-provider judges share blind spots.
 
-Every judge gets `references/judge-prompt.md` filled in: the kind, the context, the artifact list, the reference list, the owner calls, the rubric. Same text to everyone. The prompt never carries the bar, the round number, or earlier scores. A judge that knows the target drifts toward it.
+Every judge gets `references/judge-prompt.md` with its placeholders filled. `KIND` is the rubric's name. `CONTEXT` is the paragraph. `OWNER_CALLS` is the list, or `None.` when there are none. `ARTIFACT_LIST` names each file and what it shows, and `ARTIFACT_NAME` is the product's column heading. `REFERENCE_LIST` names each reference the same way, and `REFERENCE_COLUMNS` is one heading per reference, or `(no references)`. `RUBRIC` is the rubric file's text. Same text to everyone. The prompt never carries the bar, the round number, or earlier scores. A judge that knows the target drifts toward it.
 
-In climb mode, after round one, run only the cheapest judge until it clears the bar, then seat the rest. Mark skipped cells `not run`.
+In climb mode, after round one, you may run one judge alone for interim rounds to save usage or time, the one that costs least of either, while it is below the bar. Those rounds don't count toward the stop rule. A round counts only when every judge was seated. Mark skipped cells `not run`.
 
 ## Step 3. Look before you send
 
-Open the capture yourself before any judge sees it. A clipped column, a control that rendered at the wrong width, a placeholder that didn't show: the judges will score it, and that round is spent on your rendering instead of the design. The same for a doc: read it once as the judges will.
+Open the capture yourself before any judge sees it. The judges score a clipped column, a control that rendered at the wrong width, or a placeholder that didn't show, and that round is spent on your rendering instead of the design. The same for a doc: read it once as the judges will.
 
 ## Step 4. Run a round
 
-All judges at once, in parallel. Keep each judge's table and findings verbatim in the round's folder. Then merge:
+Every seated judge at once, in parallel. Keep a folder per round in the task's scratch space, never in the repo, with the capture, the filled prompt, and each judge's reply verbatim, so a regression can be traced. Then merge:
 
 1. Per category, each judge's score side by side, the references beside them.
 2. Findings two judges raised independently go first.
@@ -56,7 +56,7 @@ A judge that gives no score gets `no score`. Never invent one. Never average acr
 
 Work the lowest category per judge first. Write a scope fence before changing anything: which files, which screens. Repeated reviews breed scope creep, and your job is to fight it. Prefer one coherent change set per round over ten unrelated edits; a round that moves ten things and drops a tenth of a point can't say why.
 
-A suggestion you won't take gets a line under `Declined` with the reason. Anything that changes what the artifact does rather than how it looks or reads is a product call: it goes to the human as a Decide, not into the loop. Owner calls are repeated in the ledger every round.
+A suggestion you won't take gets a line under `Declined` with the reason. Anything that changes what the artifact does rather than how it looks or reads is a product call. It goes to the human as a Decide and stays out of the loop. Owner calls are repeated in the ledger every round.
 
 Capture again at the same viewport. Start the next round.
 
@@ -68,7 +68,7 @@ Climb mode stops when:
 - a judge reverses itself on the same element for the second time. Blue, then amber, then neutral for the same status dot is the loop trading one preference for another. That element leaves the loop and goes to the human as a Decide;
 - the human says stop.
 
-A round that changes nothing while the judges still disagree on what's weakest means the rubric or the references need work, not more rounds. Bring that to the human.
+A round that changes nothing while the judges still disagree on what's weakest means the rubric or the references need work. Bring that to the human instead of running another round.
 
 ## Output
 

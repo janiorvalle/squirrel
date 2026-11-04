@@ -1,6 +1,6 @@
 # Rubric: writing
 
-For a doc, a readme, product copy, an email, an error message, a skill file. Seven categories, each scored 1 to 10. Overall is your judgment of the whole, not an average.
+For a doc, a readme, product copy, an email, an error message, a skill file. Seven categories, each scored 1 to 10, then Overall, your judgment of the whole, not an average.
 
 **Purpose.** The piece is one kind of document, tutorial, how-to, reference, or explanation, and stays that kind. It knows who reads it and what they will do next. The first sentence is the answer or the outcome, not a run-up.
 
